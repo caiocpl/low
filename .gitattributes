@@ -1,0 +1,3 @@
+# Scripts do Windows: mantidos byte a byte (CRLF + UTF-8 com BOM), sem conversao pelo Git.
+*.ps1 -text
+*.bat -text
