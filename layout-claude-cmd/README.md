@@ -11,7 +11,7 @@ No tasks running
 | Linha | Origem da informação |
 |---|---|
 | Model | Modelo da sessão (enviado pelo Claude Code ao script) |
-| Effort | Nível de esforço: dado da sessão → `effortLevel` no `settings.json` → variável `CLAUDE_CODE_EFFORT_LEVEL` → `medium` |
+| Effort | Nível de esforço: dado da sessão → `modelSettings.<modelo>.effortLevel` ou `effortLevel` no `settings.json` → variável `CLAUDE_CODE_EFFORT_LEVEL` → `medium` |
 | Tasks | Texto fixo: a status line não tem acesso às tarefas em segundo plano |
 
 Escala da barra de esforço: `low` ▮▯▯▯▯ · `medium` ▮▮▯▯▯ · `high` ▮▮▮▯▯ · `xhigh` ▮▮▮▮▯ · `max` ▮▮▮▮▮

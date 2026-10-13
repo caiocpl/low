@@ -27,7 +27,14 @@ if (-not $effort) {
                    "$($in.workspace.project_dir)\.claude\settings.json",
                    "$env:USERPROFILE\.claude\settings.json")) {
     if (Test-Path $f) {
-      try { $s = Get-Content $f -Raw | ConvertFrom-Json; if ($s.effortLevel) { $effort = $s.effortLevel; break } } catch {}
+      try {
+        $s = Get-Content $f -Raw -Encoding UTF8 | ConvertFrom-Json
+        # Nivel por modelo (modelSettings.<id>.effortLevel) tem prioridade sobre o global
+        $porModelo = $null
+        if ($s.modelSettings -and $in.model.id) { $porModelo = $s.modelSettings.($in.model.id).effortLevel }
+        if ($porModelo) { $effort = $porModelo; break }
+        if ($s.effortLevel) { $effort = $s.effortLevel; break }
+      } catch {}
     }
   }
 }
