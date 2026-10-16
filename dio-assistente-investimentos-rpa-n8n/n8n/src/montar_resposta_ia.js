@@ -2,6 +2,7 @@
 // Consolida as mensagens geradas pelo Agente de IA e aplica as proteções (guardrails) de conformidade:
 //   1. IA falhou ou devolveu texto vazio            -> usa a mensagem-template (fallback)
 //   2. IA prometeu/garantiu retorno ("retorno garantido", "sem risco"...) -> usa a mensagem-template
+//   2b. cliente sem nenhum produto elegível       -> usa a mensagem-template (a IA não tem o que recomendar)
 //   3. IA esqueceu o aviso "não constitui recomendação" -> mantém o texto da IA e anexa o aviso padrão
 // O fluxo nunca fica sem resposta e nenhuma mensagem sai sem o aviso legal.
 //
@@ -39,13 +40,15 @@ const { recebidos, ignorados } = $('Validar clientes').first().json;
 // O Agente processa 1 item por cliente, na mesma ordem em que recebeu.
 const mensagens = base.map((cliente, i) => {
   const textoIA = typeof saidas[i]?.output === 'string' ? saidas[i].output.trim() : '';
-  const usarIA = textoIA !== '' && !prometeRetorno(textoIA);
+  // Sem produto elegível não há o que a IA recomendar: o texto dela poderia inventar produtos -> template (exato)
+  const semProdutos = !Array.isArray(cliente.produtosRecomendados) || cliente.produtosRecomendados.length === 0;
+  const usarIA = textoIA !== '' && !semProdutos && !prometeRetorno(textoIA);
   const mensagemIA = TEM_AVISO.test(textoIA) ? textoIA : `${textoIA}\n\n${AVISO}`;
   return {
     ...cliente,
     mensagemTemplate: cliente.mensagem,
     mensagem: usarIA ? mensagemIA : cliente.mensagem,
-    geradoPor: usarIA ? 'ia' : 'template (fallback)',
+    geradoPor: usarIA ? 'ia' : semProdutos ? 'template (sem produtos elegíveis)' : 'template (fallback)',
   };
 });
 

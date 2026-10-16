@@ -1176,8 +1176,9 @@ test('cruzar: o texto do perfil nunca cita produto que o cliente não pode contr
       const permitidos = PRODUTOS_REAIS.filter((p) => p.perfil === perfil).map((p) => p.produto);
       // só linhas de produto (•) e a frase da "porta de entrada" podem citar nomes de produto
       const texto = m.mensagem.split('\n').filter((l) => !l.startsWith('•') && !l.includes('porta de entrada')).join('\n');
+      const entrada = (m.mensagem.match(/porta de entrada é ([^,]+),/) || [])[1] || ''; // produto citado como entrada
       for (const [re, produto] of proibidos) {
-        if (m.produtosRecomendados.some((p) => produto.test(p.produto))) continue;
+        if (m.produtosRecomendados.some((p) => produto.test(p.produto)) || produto.test(entrada)) continue;
         assert.ok(!re.test(texto), `${perfil} R$ ${saldo}: texto cita ${re} sem oferecer o produto:\n${m.mensagem}`);
       }
       assert.ok(permitidos.length > 0);
@@ -1213,4 +1214,41 @@ test('estrutura: o corpo do 502 tolera "error" como string ou objeto e limita o 
     assert.match(corpo, /typeof \$json\.error === 'string'/, f);
     assert.match(corpo, /\.slice\(0, 200\)/, f);
   }
+});
+
+// ---------------------------------------------------------------------------
+// 14. Ajustes finais (pontos de atenção da última verificação em N8N real)
+// ---------------------------------------------------------------------------
+
+test('cruzar: se a mensagem cita Criptomoedas como "porta de entrada", o aviso de volatilidade acompanha', () => {
+  const { itens: [m] } = validarECruzar([cliente('Teste', 't@e.com', 50, 'Arrojado')]);
+  assert.deepEqual(m.produtosRecomendados, []);
+  assert.match(m.mensagem, /porta de entrada é Criptomoedas/);
+  assert.match(m.mensagem, /Criptomoedas têm volatilidade muito alta/);
+});
+
+test('cruzar: sem citar criptomoedas (Conservador/Moderado ou Arrojado que já pode comprar só ETF), não há aviso de cripto', () => {
+  for (const [saldo, perfil] of [[10, 'Conservador'], [10, 'Moderado'], [850, 'Conservador']]) {
+    const { itens: [m] } = validarECruzar([cliente('Teste', 't@e.com', saldo, perfil)]);
+    assert.ok(!/cripto/i.test(m.mensagem), `${perfil} R$ ${saldo}:\n${m.mensagem}`);
+  }
+});
+
+test('IA: cliente SEM produto elegível nunca usa o texto da IA (poderia inventar produtos) -> template exato', () => {
+  const { resposta, base } = fluxoIA(
+    [cliente('Pobre', 'p@e.com', 10, 'Moderado'), cliente('Ana Silva', 'a@e.com', 12500, 'Conservador')],
+    [{ output: 'Olá! Recomendo o Fundo XPTO com 30% ao ano.' }, { output: 'Olá, Ana! Veja as opções.' }],
+  );
+  const [semProdutos, comProdutos] = resposta.mensagens;
+  assert.equal(semProdutos.geradoPor, 'template (sem produtos elegíveis)');
+  assert.equal(semProdutos.mensagem, base[0].mensagem);
+  assert.ok(!/XPTO/.test(semProdutos.mensagem));
+  assert.equal(comProdutos.geradoPor, 'ia');
+  assert.deepEqual(resposta.resumo, { recebidos: 2, processados: 2, ignorados: 0, viaIA: 1, viaTemplate: 1 });
+});
+
+test('IA: CSV só com cabeçalho (ninguém tem produto elegível) -> todos no template, nenhum texto de IA vaza', () => {
+  const { resposta } = fluxoIA(DOIS(), [{ output: 'Invista no Fundo Inventado.' }, { output: 'Invista no Fundo Inventado.' }], [{}]);
+  assert.equal(resposta.resumo.viaIA, 0);
+  assert.ok(resposta.mensagens.every((m) => !/Inventado/.test(m.mensagem) && m.geradoPor === 'template (sem produtos elegíveis)'));
 });

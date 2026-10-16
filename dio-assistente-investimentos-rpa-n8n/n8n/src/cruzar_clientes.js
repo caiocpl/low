@@ -76,6 +76,7 @@ const itens = validos.map((cliente) => {
     }));
 
   let blocoProdutos;
+  let citados = elegiveis.map((p) => p.produto); // produtos que a mensagem menciona (oferecidos ou 'porta de entrada')
   if (elegiveis.length) {
     blocoProdutos =
       'Opções compatíveis com o seu perfil e o seu saldo:\n' +
@@ -84,6 +85,7 @@ const itens = validos.map((cliente) => {
         .join('\n');
   } else if (doPerfil.length) {
     const menor = doPerfil.reduce((a, b) => (b.minimo < a.minimo ? b : a));
+    citados = [menor.produto];
     blocoProdutos =
       `Hoje o seu saldo ainda não alcança o aporte mínimo das opções do seu perfil. ` +
       `A porta de entrada é ${menor.produto}, com aporte mínimo de ${brl(menor.minimo)} ` +
@@ -92,8 +94,8 @@ const itens = validos.map((cliente) => {
     blocoProdutos = 'No momento não há opções cadastradas para o seu perfil.';
   }
 
-  // Aviso extra só quando o produto de maior volatilidade é de fato oferecido a este cliente
-  const riscoExtra = elegiveis.some((p) => /cripto/i.test(p.produto))
+  // Aviso extra sempre que a mensagem menciona o produto de maior volatilidade (oferecido ou como 'porta de entrada')
+  const riscoExtra = citados.some((produto) => /cripto/i.test(produto))
     ? ' Criptomoedas têm volatilidade muito alta e podem perder valor rapidamente.'
     : '';
 
