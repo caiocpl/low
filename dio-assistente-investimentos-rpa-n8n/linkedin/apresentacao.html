@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Assistente de Investimentos com RPA, N8N e IA — Caio Louback</title>
+<style>
+  :root{
+    --bg:#0B1F3A; --surface:#12294B; --surface2:#173560; --line:#2A4A7A;
+    --text:#F4F7FB; --muted:#B4C3DA; --amber:#FFB547; --teal:#3DD6C3; --red:#FF8A80;
+  }
+  @page{ size:1080px 1350px; margin:0 }
+  *{ box-sizing:border-box }
+  html,body{ margin:0; padding:0; background:var(--bg); -webkit-print-color-adjust:exact; print-color-adjust:exact }
+  body{ font-family:"Inter","Segoe UI","Helvetica Neue",Arial,sans-serif; color:var(--text) }
+  a{ color:var(--amber); text-decoration:none }
+
+  .slide{ width:1080px; height:1350px; position:relative; overflow:hidden; page-break-after:always; break-after:page;
+          background:var(--bg); padding:120px 88px 150px }
+  .slide:last-child{ page-break-after:auto; break-after:auto }
+  .slide::before{ content:""; position:absolute; inset:0 0 auto 0; height:10px; background:linear-gradient(90deg,var(--amber),var(--teal)) }
+
+  .top{ position:absolute; top:44px; left:88px; right:88px; display:flex; justify-content:space-between;
+        font-size:24px; font-weight:600; letter-spacing:.04em; color:var(--muted); text-transform:uppercase }
+  .foot{ position:absolute; bottom:48px; left:88px; right:88px; display:flex; justify-content:space-between;
+         font-size:24px; color:var(--muted) }
+
+  h1{ font-size:84px; line-height:1.04; margin:0 0 36px; font-weight:800; letter-spacing:-.02em }
+  h2{ font-size:68px; line-height:1.08; margin:0 0 30px; font-weight:800; letter-spacing:-.015em }
+  .lead{ font-size:38px; line-height:1.35; color:var(--muted); margin:0 0 34px }
+  .lead b, p b{ color:var(--text) }
+  p{ font-size:34px; line-height:1.4; margin:0 0 22px }
+  .kicker{ font-size:28px; font-weight:700; letter-spacing:.12em; color:var(--amber); text-transform:uppercase; margin-bottom:26px }
+  .accent{ color:var(--amber) }
+  .teal{ color:var(--teal) }
+
+  .chips{ display:flex; flex-wrap:wrap; gap:16px; margin-top:44px }
+  .chip{ border:2px solid var(--line); background:var(--surface); border-radius:999px; padding:12px 28px; font-size:30px; font-weight:600 }
+
+  .card{ background:var(--surface); border:2px solid var(--line); border-radius:28px; padding:34px 38px }
+  .callout{ border-left:10px solid var(--amber); background:var(--surface); border-radius:0 24px 24px 0; padding:30px 38px; font-size:36px; line-height:1.35 }
+  .callout.teal{ border-left-color:var(--teal) }
+
+  .steps{ display:grid; gap:22px; margin:34px 0 40px }
+  .step{ display:flex; gap:28px; align-items:center }
+  .num{ flex:0 0 84px; height:84px; border-radius:50%; background:var(--amber); color:var(--bg);
+        font-size:44px; font-weight:800; display:flex; align-items:center; justify-content:center }
+  .step div.t{ font-size:36px; line-height:1.28 }
+  .step small{ display:block; font-size:28px; color:var(--muted); margin-top:4px }
+
+  /* diagrama */
+  .flow{ display:flex; flex-direction:column; align-items:center; gap:0; margin-top:14px }
+  .node{ width:100%; background:var(--surface); border:2px solid var(--line); border-radius:22px; padding:20px 30px;
+         display:flex; justify-content:space-between; align-items:center; gap:20px }
+  .node .n{ font-size:34px; font-weight:700 }
+  .node .d{ font-size:26px; color:var(--muted); text-align:right }
+  .node.hi{ border-color:var(--amber); background:var(--surface2) }
+  .node.ok{ border-color:var(--teal) }
+  .arrow{ font-size:34px; color:var(--amber); line-height:1; padding:14px 0 }
+  .branches{ display:grid; grid-template-columns:1fr 1fr; gap:20px; width:100%; margin-top:18px }
+  .branch{ border:2px dashed var(--red); border-radius:20px; padding:16px 22px; font-size:27px; line-height:1.3; color:var(--text) }
+  .branch b{ color:var(--red) }
+
+  table{ width:100%; border-collapse:separate; border-spacing:0 14px }
+  th{ text-align:left; font-size:26px; font-weight:700; color:var(--muted); letter-spacing:.06em; text-transform:uppercase; padding:0 20px 4px }
+  td{ background:var(--surface); padding:22px 20px; font-size:31px; line-height:1.28; vertical-align:top }
+  td:first-child{ border-radius:20px 0 0 20px; font-weight:700 }
+  td:last-child{ border-radius:0 20px 20px 0 }
+  td small{ display:block; font-size:25px; color:var(--amber); margin-top:6px; line-height:1.25 }
+  td.perfil{ color:var(--muted); font-size:27px }
+
+  .tag{ display:inline-block; font-size:24px; font-weight:700; padding:4px 14px; border-radius:10px; margin-right:10px; vertical-align:middle }
+  .t200{ background:rgba(61,214,195,.18); color:var(--teal) }
+  .t422{ background:rgba(255,181,71,.18); color:var(--amber) }
+  .t502{ background:rgba(255,138,128,.18); color:var(--red) }
+
+  .big{ display:grid; grid-template-columns:1fr 1fr; gap:22px; margin:30px 0 34px }
+  .big .card{ text-align:left }
+  .big .v{ font-size:84px; font-weight:800; line-height:1; color:var(--amber) }
+  .big .l{ font-size:28px; color:var(--muted); margin-top:10px; line-height:1.25 }
+
+  ul.list{ list-style:none; padding:0; margin:0 }
+  ul.list li{ font-size:33px; line-height:1.32; padding:14px 0 14px 50px; position:relative; border-bottom:1px solid var(--line) }
+  ul.list li:last-child{ border-bottom:0 }
+  ul.list li::before{ content:"✓"; position:absolute; left:0; top:12px; color:var(--teal); font-weight:800; font-size:36px }
+  ul.list.bad li::before{ content:"!"; color:var(--red) }
+
+  .note{ font-size:27px; color:var(--muted); line-height:1.35; margin-top:26px }
+  .note b{ color:var(--text) }
+  .cta{ border:2px solid var(--amber); border-radius:28px; padding:30px 36px; margin-top:34px; background:var(--surface) }
+  .cta .u{ font-size:32px; font-weight:700; color:var(--amber); word-break:break-all }
+</style>
+</head>
+<body>
+
+<!-- 1. CAPA -->
+<section class="slide">
+  <div class="top"><span>Desafio DIO · RPA + N8N + IA</span><span>1/8</span></div>
+  <div style="margin-top:150px">
+    <div class="kicker">Estudo de caso</div>
+    <h1>Assistente de Investimentos com <span class="accent">RPA, N8N e IA</span></h1>
+    <p class="lead">Do dado numa página web à mensagem certa para cada cliente — com regras de negócio, testes e proteções.</p>
+    <div class="chips"><span class="chip">Python</span><span class="chip">N8N</span><span class="chip">Gemini</span><span class="chip">JavaScript</span><span class="chip">Webhook</span></div>
+  </div>
+  <div style="position:absolute; left:88px; right:88px; bottom:150px">
+    <div style="font-size:34px; font-weight:700">Caio Louback</div>
+    <div style="font-size:28px; color:var(--muted); margin-top:6px">Outubro de 2026</div>
+  </div>
+  <div class="foot"><span></span><span class="accent" style="font-weight:700">Deslize →</span></div>
+</section>
+
+<!-- 2. PROBLEMA -->
+<section class="slide">
+  <div class="top"><span>O problema</span><span>2/8</span></div>
+  <h2>Falar com cada cliente do jeito certo — <span class="accent">sem API</span></h2>
+  <p class="lead">Os dados dos clientes estão numa página web. Ninguém quer copiar e colar tabela, e a mensagem precisa respeitar o perfil e o saldo de cada um.</p>
+  <div class="steps">
+    <div class="step"><div class="num">1</div><div class="t"><b>Um robô lê a página</b><small>RPA em Python: requests + BeautifulSoup</small></div></div>
+    <div class="step"><div class="num">2</div><div class="t"><b>O N8N valida e cruza os dados</b><small>perfil × saldo × aporte mínimo dos produtos</small></div></div>
+    <div class="step"><div class="num">3</div><div class="t"><b>Cada cliente recebe a mensagem certa</b><small>template (MVP) ou IA generativa, com proteções</small></div></div>
+  </div>
+  <div class="callout"><b>Regra central:</b> o cliente só vê produtos do <b class="accent">seu perfil</b> cujo <b class="accent">aporte mínimo cabe no saldo</b>.</div>
+  <div class="foot"><span>Caio Louback</span><span>DIO · RPA + N8N</span></div>
+</section>
+
+<!-- 3. ARQUITETURA -->
+<section class="slide">
+  <div class="top"><span>Arquitetura</span><span>3/8</span></div>
+  <h2>Como funciona, <span class="accent">de ponta a ponta</span></h2>
+  <div class="flow">
+    <div class="node"><span class="n">Página de clientes</span><span class="d">GitHub Pages</span></div>
+    <div class="arrow">↓</div>
+    <div class="node"><span class="n">Robô RPA</span><span class="d">Python · lê a tabela</span></div>
+    <div class="arrow">↓ POST JSON</div>
+    <div class="node hi"><span class="n">Webhook N8N</span><span class="d">valida os clientes</span></div>
+    <div class="arrow">↓</div>
+    <div class="node hi"><span class="n">Baixa o data.csv e cruza</span><span class="d">perfil × saldo × mínimo</span></div>
+    <div class="arrow">↓</div>
+    <div class="node hi"><span class="n">Gera a mensagem</span><span class="d">template ou IA (Gemini)</span></div>
+    <div class="arrow">↓</div>
+    <div class="node ok"><span class="n">Responde ao robô</span><span class="d">JSON com as mensagens</span></div>
+  </div>
+  <div class="branches">
+    <div class="branch"><b>422</b> · nenhum cliente válido, com o motivo de cada um</div>
+    <div class="branch"><b>502</b> · base de produtos (CSV) indisponível</div>
+  </div>
+  <div class="foot"><span>Caio Louback</span><span>DIO · RPA + N8N</span></div>
+</section>
+
+<!-- 4. REGRA NA PRÁTICA -->
+<section class="slide">
+  <div class="top"><span>Na prática</span><span>4/8</span></div>
+  <h2>A regra, <span class="accent">com clientes reais</span> do teste</h2>
+  <p class="lead">Mesmo perfil, saldos diferentes: cada um vê só o que pode contratar.</p>
+  <table>
+    <tr><th>Cliente</th><th>Saldo</th><th>Recebe</th></tr>
+    <tr><td>Ana<br><span class="perfil" style="font-weight:500;color:var(--muted);font-size:25px">Conservador</span></td><td>R$ 12.500</td><td>Poupança, CDB Liquidez Diária e Tesouro Selic</td></tr>
+    <tr><td>Daniel<br><span style="font-weight:500;color:var(--muted);font-size:25px">Conservador</span></td><td>R$ 850</td><td>Poupança e Tesouro Selic<small>sem o CDB: mínimo de R$ 1.000</small></td></tr>
+    <tr><td>Isabela<br><span style="font-weight:500;color:var(--muted);font-size:25px">Conservador</span></td><td>R$ 500</td><td>Poupança e Tesouro Selic<small>mínimo de R$ 500 vale: a regra é “menor ou igual”</small></td></tr>
+    <tr><td>Bruno<br><span style="font-weight:500;color:var(--muted);font-size:25px">Moderado</span></td><td>R$ 3.200</td><td>CDB Prefixado e Tesouro IPCA+<small>sem o multimercado: mínimo de R$ 5.000</small></td></tr>
+  </table>
+  <div class="note">Sem nenhum produto elegível, a mensagem informa o produto de entrada do perfil e <b>quanto falta</b> para chegar a ele.</div>
+  <div class="foot"><span>Caio Louback</span><span>DIO · RPA + N8N</span></div>
+</section>
+
+<!-- 5. IA COM GUARDRAILS -->
+<section class="slide">
+  <div class="top"><span>IA generativa</span><span>5/8</span></div>
+  <h2>A IA <span class="accent">escreve</span>. O código <span class="accent">decide</span>.</h2>
+  <p class="lead">O modelo nunca escolhe os produtos, só redige a mensagem. Tudo o que ele devolve passa por proteções:</p>
+  <table>
+    <tr><th>Se a IA…</th><th>O fluxo…</th></tr>
+    <tr><td>falha ou devolve texto vazio</td><td>usa a mensagem-template</td></tr>
+    <tr><td>promete retorno (“retorno garantido”, “risco zero”)</td><td>descarta o texto e usa o template</td></tr>
+    <tr><td>esquece o aviso legal</td><td>mantém o texto e anexa o aviso</td></tr>
+    <tr><td>recebe cliente sem produto elegível</td><td>usa o template (a IA poderia inventar um produto)</td></tr>
+    <tr><td>diz “não garantimos retorno”</td><td>mantém: frase legítima não é descartada</td></tr>
+  </table>
+  <div class="note"><b>Limite honesto:</b> o filtro de promessas é heurístico e não substitui a revisão humana antes de enviar a um cliente.</div>
+  <div class="foot"><span>Caio Louback</span><span>DIO · RPA + N8N</span></div>
+</section>
+
+<!-- 6. ROBUSTEZ -->
+<section class="slide">
+  <div class="top"><span>Robustez</span><span>6/8</span></div>
+  <h2>Quando algo dá errado, <span class="accent">falhar de forma clara</span></h2>
+  <table>
+    <tr><th>Resposta do Webhook</th><th>Quando</th></tr>
+    <tr><td><span class="tag t200">200</span></td><td>há ao menos um cliente válido: devolve as mensagens</td></tr>
+    <tr><td><span class="tag t422">422</span></td><td>nenhum cliente válido: lista o motivo de cada um</td></tr>
+    <tr><td><span class="tag t502">502</span></td><td>não foi possível baixar o CSV de produtos</td></tr>
+  </table>
+  <ul class="list" style="margin-top:14px">
+    <li>E-mail único e perfil válido; saldo no formato brasileiro</li>
+    <li>Rejeita “12,500.00” e “1e3” em vez de ler um valor errado</li>
+    <li>CSV vazio ou página de erro no lugar dele não trava o fluxo</li>
+  </ul>
+  <div class="callout teal" style="margin-top:34px; font-size:32px"><b>Achado da verificação:</b> com o CSV fora do ar, o N8N respondia <b>200 com corpo vazio</b>. Agora responde 502 com o motivo.</div>
+  <div class="foot"><span>Caio Louback</span><span>DIO · RPA + N8N</span></div>
+</section>
+
+<!-- 7. QUALIDADE -->
+<section class="slide">
+  <div class="top"><span>Qualidade</span><span>7/8</span></div>
+  <h2>Como <span class="accent">verifiquei</span> o resultado</h2>
+  <div class="big">
+    <div class="card"><div class="v">102</div><div class="l">testes automatizados da lógica dos nós (JavaScript)</div></div>
+    <div class="card"><div class="v">101</div><div class="l">testes do robô e do notebook (Python), 1 pulado</div></div>
+    <div class="card"><div class="v">3</div><div class="l">rodadas de verificação independente em N8N real (2.35.7)</div></div>
+    <div class="card"><div class="v">20/20</div><div class="l">testes aprovados na rodada final</div></div>
+  </div>
+  <p style="font-size:30px; margin-bottom:10px"><b>O que a verificação achou — e foi corrigido:</b></p>
+  <ul class="list bad" style="margin-bottom:6px">
+    <li>Importar o workflow falhava (JSON sem <i>id</i>)</li>
+    <li>Filtro da IA deixava passar 42 de 116 frases problemáticas</li>
+    <li>Saldo “12,500.00” era lido como R$ 12,50</li>
+  </ul>
+  <div class="note"><b>Limite:</b> o caminho da IA foi testado com um modelo simulado; o teste com o Gemini real depende da credencial de quem implanta.</div>
+  <div class="foot"><span>Caio Louback</span><span>DIO · RPA + N8N</span></div>
+</section>
+
+<!-- 8. FECHAMENTO -->
+<section class="slide">
+  <div class="top"><span>Aprendizados</span><span>8/8</span></div>
+  <h2>O que levo <span class="accent">deste projeto</span></h2>
+  <ul class="list">
+    <li><b>IA só escreve</b>: regra de negócio fica no código, onde dá para testar</li>
+    <li><b>Teste o erro</b>, não só o caminho feliz: foi onde estavam os defeitos</li>
+    <li><b>Olhar independente</b> acha o que o autor não vê</li>
+  </ul>
+  <p style="font-size:30px; margin:30px 0 0; color:var(--muted)"><b style="color:var(--text)">Próximos passos:</b> envio por e-mail após aprovação humana, autenticação no Webhook e testes em CI.</p>
+  <div class="cta">
+    <div style="font-size:28px; color:var(--muted); margin-bottom:8px">Código, testes e documentação</div>
+    <div class="u"><a href="https://github.com/caiocpl/low/tree/claude/relaxed-brahmagupta-x8uxm8/dio-assistente-investimentos-rpa-n8n">github.com/caiocpl/low</a></div>
+    <div style="font-size:28px; color:var(--muted); margin-top:6px">pasta dio-assistente-investimentos-rpa-n8n</div>
+  </div>
+  <div class="note">Base do desafio: DIO. Desenvolvido com apoio de IA generativa (Claude), como o enunciado permite.</div>
+  <div class="foot"><span>Caio Louback</span><span>DIO · RPA + N8N</span></div>
+</section>
+
+</body>
+</html>
