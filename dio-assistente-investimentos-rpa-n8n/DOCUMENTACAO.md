@@ -59,7 +59,7 @@ dio-assistente-investimentos-rpa-n8n/
 │   ├── build.py                 # gera os dois JSON a partir de n8n/src
 │   └── src/                     # código dos nós Code (.js) e prompt do agente (.txt)
 └── tests/
-    ├── n8n_nodes.test.js        # 98 testes da lógica dos nós (node:test)
+    ├── n8n_nodes.test.js        # 102 testes da lógica dos nós (node:test)
     ├── test_extrair_clientes.py # 101 testes do RPA e do notebook (unittest)
     └── fixtures/frases_ia.json  # bateria de regressão do guardrail da IA
 ```
@@ -186,6 +186,7 @@ Esta mensagem é informativa e não constitui recomendação de investimento; re
 | Situação | Ação |
 |---|---|
 | Erro, cota esgotada ou texto vazio | Usa a mensagem-template (`template (fallback)`) |
+| Cliente **sem nenhum produto elegível** | Descarta o texto da IA e usa o template (`template (sem produtos elegíveis)`): sem produto na lista, o modelo poderia inventar um. O agente ainda é chamado para esse cliente (custo marginal); evitar a chamada exigiria um ramo extra no fluxo. |
 | Promessa/garantia de retorno ("retorno garantido", "risco zero", "100% segura"…) | Descarta o texto da IA; usa o template |
 | Sem o aviso "não constitui recomendação" | Mantém o texto da IA e **anexa** o aviso padrão |
 | Frases legítimas com negação ("não garantimos retorno", "FGC garante até R$ 250 mil") | **Não** são descartadas |
@@ -200,12 +201,14 @@ A solução foi verificada por **agentes independentes** (cada um sem acesso ao 
 |---|---|---|
 | **1** | N8N real + testes de lógica + testes do RPA + revisão de schema contra o código-fonte dos nós | 6 problemas confirmados, 0 refutados. Todos corrigidos. Os mais relevantes: import falhava (JSON sem `id`) e falha no download do CSV respondia **200 vazio**. |
 | **2** | Regressão em N8N real (42 testes) + revisão adversarial do diff (170 testes/baterias) | Regressão sem problemas médios ou maiores. Revisão achou 4 defeitos confirmados (guardrail frágil: 42 falsos negativos em 116 frases; saldo en-US lido como R$ 12,50; texto de perfil incoerente; `<tfoot>` virando cliente). Todos corrigidos. |
-| **3** | N8N real, só o que mudou: CSV sem linhas, corpo do 502, guardrail integrado, import | _preenchido ao final da rodada_ |
+| **3** | N8N real (2.35.7), só o que mudou: CSV sem linhas, corpo do 502, guardrail integrado, import, RPA | **20 de 20 testes aprovados.** CSV só com cabeçalho, vazio (0 bytes) e HTML no lugar do CSV: Webhook responde 200 em < 0,3 s (antes podia ficar sem resposta). 502 com `{erro, detalhe}` em ~4 s (3 tentativas), `detalhe` cortado em exatamente 200 caracteres. IA com mock: 10 chamadas para 10 clientes (sem retry); “retorno garantido”, “O retorno é garantido.” e “Livre de risco.” → template; “Não garantimos retorno…” → mantida como `ia`. Dois pontos de baixa gravidade foram corrigidos depois (nota abaixo). |
+
+> **Ajustes posteriores à rodada 3.** Dois pontos de baixa gravidade levantados pela própria rodada 3 foram corrigidos depois dela: (1) quando a mensagem cita Criptomoedas como “porta de entrada” (cliente Arrojado com saldo abaixo de R$ 100), o aviso de volatilidade agora acompanha; (2) cliente sem produto elegível não usa mais o texto da IA. Essas duas mudanças são **lógica dos nós Code** e estão cobertas pelos testes automatizados, mas **não foram reexecutadas num N8N real** — o fluxo de integração foi validado nas rodadas anteriores e a estrutura dos workflows não mudou.
 
 **Suítes automatizadas** (sem rede, sem dependências além das do projeto):
 
 ```bash
-node --test tests/n8n_nodes.test.js                 # 98 testes — lógica dos nós, estrutura dos workflows, guardrail
+node --test tests/n8n_nodes.test.js                 # 102 testes — lógica dos nós, estrutura dos workflows, guardrail
 python3 -m unittest discover -s tests               # 101 testes (1 pulado: validação formal do notebook exige nbformat)
 ```
 
