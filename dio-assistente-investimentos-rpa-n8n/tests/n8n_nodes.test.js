@@ -1085,3 +1085,132 @@ test('estrutura: todas as conexões apontam para nós existentes e o Agente de I
   assert.equal(agente.onError, 'continueRegularOutput');
   assert.equal(agente.retryOnFail, undefined, 'retry reexecutaria o lote inteiro de clientes');
 });
+
+// ---------------------------------------------------------------------------
+// 13. Segunda rodada de correções (revisão adversarial do diff)
+// ---------------------------------------------------------------------------
+
+const FRASES = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'frases_ia.json'), 'utf8'));
+
+/** Passa uma frase pelo "Montar resposta (IA)" e devolve a mensagem do 1º cliente. */
+const filtrarFrase = (frase) => fluxoIA([OK()], [{ output: frase }]).resposta.mensagens[0];
+
+test('IA guardrail: frases legítimas (inclusive com negação e FGC) NÃO são descartadas', () => {
+  assert.ok(FRASES.manter.length >= 40);
+  const descartadas = FRASES.manter.filter((f) => filtrarFrase(f).geradoPor !== 'ia');
+  assert.deepEqual(descartadas, [], 'falsos positivos do guardrail');
+});
+
+test('IA guardrail: promessas de retorno/garantia/risco nulo SÃO descartadas e viram o template', () => {
+  assert.ok(FRASES.descartar.length >= 60);
+  const passaram = FRASES.descartar.filter((f) => filtrarFrase(f).geradoPor === 'ia');
+  assert.deepEqual(passaram, [], 'falsos negativos do guardrail (promessa que passou)');
+});
+
+test('IA guardrail: frases ambíguas podem ir para qualquer lado, mas a mensagem final sempre leva o aviso legal', () => {
+  for (const frase of FRASES.tolerados) assert.match(filtrarFrase(frase).mensagem, AVISO_RE, frase);
+});
+
+test('IA guardrail: nenhuma frase da bateria produz mensagem sem aviso legal', () => {
+  for (const frase of [...FRASES.manter, ...FRASES.descartar, ...FRASES.tolerados]) {
+    assert.match(filtrarFrase(frase).mensagem, AVISO_RE, frase);
+  }
+});
+
+test('IA guardrail: promessa escondida no meio de um texto longo e quebra de linha entre as palavras', () => {
+  const longo = 'Olá, Ana! Veja as opções abaixo.\n• Tesouro Selic — aporte mínimo R$ 500,00\nEsse produto tem retorno\ngarantido e você vai amar.';
+  assert.equal(filtrarFrase(longo).geradoPor, 'template (fallback)');
+});
+
+test('IA guardrail: variantes do aviso legal não são duplicadas', () => {
+  for (const aviso of ['Isto não é uma recomendação de investimento.', 'Não constitui recomendação de investimentos.', 'Não representa recomendação de investimento.']) {
+    const m = filtrarFrase(`Olá, Ana! Veja as opções. ${aviso}`);
+    assert.equal(m.geradoPor, 'ia', aviso);
+    assert.equal((m.mensagem.match(/recomenda[çc][ãõa]\w* de investimento/gi) || []).length, 1, `aviso duplicado: ${m.mensagem}`);
+  }
+});
+
+test('validar: saldo em formato en-US ("12,500.00", "1,234.56") é REJEITADO, não lido como R$ 12,50', () => {
+  for (const saldo of ['1,234.56', '12,500.00', 'R$ 12,500.00', '1.234,567', '1,005', '1,2,3']) {
+    const v = validarLista([cliente('Teste', 't@e.com', saldo, 'Moderado')]);
+    assert.equal(v.validos.length, 0, saldo);
+    assert.ok(v.ignorados[0].motivos.includes('saldo inválido'), saldo);
+  }
+  for (const [saldo, esperado] of [['12,5', 12.5], ['1.000,50', 1000.5], ['0,5', 0.5], ['850,00', 850], ['R$ 1 000,00', 1000], ['1234.56', 1234.56]]) {
+    assert.equal(validarLista([cliente('Teste', 't@e.com', saldo, 'Moderado')]).validos[0]?.saldo, esperado, saldo);
+  }
+});
+
+test('validar: saldo astronômico, infinito, negativo ínfimo e -0', () => {
+  for (const saldo of [1e21, 1e13, Infinity, -Infinity, NaN, '1e21', -0.004, '-R$ 0,01', true, [], {}]) {
+    const v = validarLista([cliente('Teste', `x${String(saldo).length}@e.com`, saldo, 'Moderado')]);
+    assert.equal(v.validos.length, 0, String(saldo));
+  }
+  for (const entrada of [-0, '-R$ 0,00']) {
+    const zero = validarLista([cliente('Teste', 'z@e.com', entrada, 'Moderado')]).validos[0];
+    assert.ok(Object.is(zero.saldo, 0), `saldo ${entrada} deve virar +0`);
+  }
+  assert.equal(validarLista([cliente('Teste', 'k@e.com', 1e12, 'Moderado')]).validos.length, 1, 'o limite (1e12) ainda é válido');
+});
+
+test('cruzar: mínimo "1e3", "0x10" e "1.000" no CSV são descartados; "1000,5" e "100" valem', () => {
+  const linha = (minimo) => ({ perfil: 'Moderado', produto: `P${minimo}`, minimo, rentabilidade: '9%' });
+  const csv = ['1e3', '0x10', '1.000', '1000,5', '100', 100].map(linha);
+  const { itens: [m] } = validarECruzar([cliente('Bruno', 'b@e.com', 5000, 'Moderado')], csv);
+  assert.deepEqual(nomesProdutos(m).sort(), ['P100', 'P100', 'P1000,5'].sort());
+});
+
+test('cruzar: rentabilidade com mais de um ponto decimal é formatada em todas as ocorrências', () => {
+  const csv = [{ perfil: 'Moderado', produto: 'X', minimo: '10', rentabilidade: 'CDI 1.5% + 0.3%' }];
+  const { itens: [m] } = validarECruzar([cliente('Bruno', 'b@e.com', 5000, 'Moderado')], csv);
+  assert.equal(m.produtosRecomendados[0].rentabilidadeFormatada, 'CDI 1,5% + 0,3%');
+});
+
+test('cruzar: o texto do perfil nunca cita produto que o cliente não pode contratar (grade perfil x saldo)', () => {
+  // [termo no texto, produto que o justifica]: o termo só pode aparecer se o produto é oferecido a este cliente
+  const proibidos = [[/multimercado/i, /multimercado/i], [/fundos? de a[çc][õo]es/i, /fundo de a[çc][õo]es/i], [/\bETFs?\b/, /ETF/],
+    [/cripto/i, /cripto/i], [/poupan[çc]a/i, /poupan[çc]a/i], [/\bCDB\b/, /CDB/], [/tesouro/i, /tesouro/i]];
+  for (const perfil of ['Conservador', 'Moderado', 'Arrojado']) {
+    for (const saldo of [0, 50, 100, 499, 500, 999, 1000, 3200, 4999, 5000, 9999, 10000, 45000]) {
+      const { itens: [m] } = validarECruzar([cliente('Teste', 't@e.com', saldo, perfil)]);
+      const permitidos = PRODUTOS_REAIS.filter((p) => p.perfil === perfil).map((p) => p.produto);
+      // só linhas de produto (•) e a frase da "porta de entrada" podem citar nomes de produto
+      const texto = m.mensagem.split('\n').filter((l) => !l.startsWith('•') && !l.includes('porta de entrada')).join('\n');
+      for (const [re, produto] of proibidos) {
+        if (m.produtosRecomendados.some((p) => produto.test(p.produto))) continue;
+        assert.ok(!re.test(texto), `${perfil} R$ ${saldo}: texto cita ${re} sem oferecer o produto:\n${m.mensagem}`);
+      }
+      assert.ok(permitidos.length > 0);
+    }
+  }
+});
+
+test('fontes: nenhum caractere invisível literal (BOM, diacríticos combinantes, zero-width) nos nós Code', () => {
+  for (const [nome, codigo] of Object.entries(CODIGO)) {
+    const achados = [...codigo].filter((ch) => /[̀-ͯ﻿​-‏⁠]/.test(ch)).map((ch) => 'U+' + ch.codePointAt(0).toString(16));
+    assert.deepEqual(achados, [], `${nome}.js tem caracteres invisíveis literais; use escapes \\uXXXX`);
+  }
+});
+
+test('estrutura: "Ler CSV" sempre emite um item (CSV sem linhas não deixa o Webhook sem resposta)', () => {
+  for (const f of ['workflow.json', 'workflow-ia.json']) {
+    const wf = JSON.parse(fs.readFileSync(path.join(RAIZ, 'n8n', f), 'utf8'));
+    assert.equal(wf.nodes.find((n) => n.name === 'Ler CSV').alwaysOutputData, true, f);
+  }
+});
+
+test('cruzar: CSV sem linhas (1 item vazio, como gera o alwaysOutputData) -> mensagens "sem opções", sem exceção', () => {
+  const v = validarLista([OK()]);
+  const saida = executarNo(CODIGO.cruzar, [{ json: { produtos: [{}] } }], { [N_VALIDAR]: [{ json: v }] });
+  assert.equal(saida.length, 1);
+  assert.match(saida[0].json.mensagem, /No momento não há opções cadastradas/);
+});
+
+test('estrutura: o corpo do 502 tolera "error" como string ou objeto e limita o tamanho do detalhe', () => {
+  for (const f of ['workflow.json', 'workflow-ia.json']) {
+    const wf = JSON.parse(fs.readFileSync(path.join(RAIZ, 'n8n', f), 'utf8'));
+    const corpo = wf.nodes.find((n) => n.name === 'Responder 502').parameters.responseBody;
+    assert.match(corpo, /typeof \$json\.error === 'string'/, f);
+    assert.match(corpo, /\.slice\(0, 200\)/, f);
+  }
+});

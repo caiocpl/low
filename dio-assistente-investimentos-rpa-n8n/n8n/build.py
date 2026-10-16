@@ -114,12 +114,15 @@ def nos_comuns(caminho_webhook):
             "respondWith": "json",
             "responseBody": (
                 "={{ JSON.stringify({ erro: 'Não foi possível carregar a base de produtos (data.csv)', "
-                "detalhe: $json.error && $json.error.message }) }}"
+                "detalhe: String(typeof $json.error === 'string' ? $json.error : ($json.error && $json.error.message) || '')"
+                ".slice(0, 200) }) }}"
             ),
             "options": {"responseCode": 502},
         }),
+        # alwaysOutputData: um CSV sem linhas ainda gera 1 item vazio -> a cadeia segue e o RPA recebe resposta
+        # (sem isso, o Aggregate nem executaria e o Webhook ficaria sem responder até o timeout)
         no(N_LER, "n8n-nodes-base.extractFromFile", 1, (1200, 200),
-           {"operation": "csv", "options": {}}),
+           {"operation": "csv", "options": {}}, alwaysOutputData=True),
         no(N_AGRUPAR, "n8n-nodes-base.aggregate", 1, (1440, 200), {
             "aggregate": "aggregateAllItemData",
             "destinationFieldName": "produtos",

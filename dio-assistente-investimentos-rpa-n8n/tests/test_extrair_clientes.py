@@ -136,6 +136,17 @@ class _Handler(BaseHTTPRequestHandler):
             self._responder(200, b"[1, 2, 3]", "application/json")
         elif self.path == "/webhook-null":
             self._responder(200, b"null", "application/json")
+        elif self.path == "/webhook-422-ignorados":
+            corpo = {"erro": "Nenhum cliente válido no payload.", "recebidos": 2, "ignorados": [
+                {"indice": 0, "nome": "Zé", "motivos": ["e-mail inválido", "saldo inválido"]},
+                {"indice": 1, "nome": None, "motivos": ["nome ausente"]}]}
+            self._responder(422, json.dumps(corpo, ensure_ascii=False).encode("utf-8"), "application/json")
+        elif self.path == "/webhook-502":
+            corpo = {"erro": "Não foi possível carregar a base de produtos (data.csv)", "detalhe": "connect ECONNREFUSED"}
+            self._responder(502, json.dumps(corpo, ensure_ascii=False).encode("utf-8"), "application/json")
+        elif self.path == "/webhook-malformado":  # JSON objeto, mas com tipos errados
+            self._responder(200, b'{"resumo": 5, "mensagens": [1, {"nome": "so nome"}, null], "ignorados": "x"}',
+                            "application/json")
         elif self.path == "/webhook-422":
             self._responder(422, b'{"erro":"nenhum cliente valido"}', "application/json")
         elif self.path == "/webhook-500":
@@ -802,6 +813,128 @@ class TestNotebook(BaseComServidor):
         with contextlib.redirect_stdout(saida):
             exec(compile(celula_envio, "<celula-envio>", "exec"), ns)
         self.assertIn("nome ausente, e-mail inválido", saida.getvalue())
+
+
+# --------------------------------------------------------------------------- #
+# Segunda rodada de correções (revisão adversarial)
+# --------------------------------------------------------------------------- #
+class TestExtracaoRobusta(unittest.TestCase):
+    LINHA = '<tr><td class="nome">{}</td><td class="email">a@a.com</td><td class="saldo">R$ 1,00</td><td class="perfil">Moderado</td></tr>'
+
+    def nomes(self, html):
+        with contextlib.redirect_stderr(io.StringIO()):
+            return [c["nome"] for c in ec.extrair_clientes(html)]
+
+    def test_linha_de_total_no_tfoot_nao_vira_cliente(self):
+        html = ('<table id="clientes"><thead><tr><th>N</th></tr></thead><tbody>' + self.LINHA.format("Ana") + "</tbody>"
+                '<tfoot><tr><td>Total</td><td>-</td><td>R$ 1,00</td><td>-</td></tr></tfoot></table>')
+        self.assertEqual(self.nomes(html), ["Ana"])
+
+    def test_tfoot_antes_do_tbody_tambem_e_ignorado(self):
+        html = ('<table id="clientes"><tfoot><tr><td>Total</td><td>-</td><td>R$ 1,00</td><td>-</td></tr></tfoot>'
+                "<tbody>" + self.LINHA.format("Ana") + "</tbody></table>")
+        self.assertEqual(self.nomes(html), ["Ana"])
+
+    def test_thead_com_td_e_ignorado(self):
+        html = ('<table id="clientes"><thead><tr><td>Nome</td><td>E</td><td>S</td><td>P</td></tr></thead>'
+                "<tbody>" + self.LINHA.format("Ana") + "</tbody></table>")
+        self.assertEqual(self.nomes(html), ["Ana"])
+
+    def test_tabela_aninhada_nao_contamina_a_lista(self):
+        interna = '<table><tr><td>x</td><td>y</td><td>z</td><td>w</td></tr></table>'
+        html = ('<table id="clientes"><tbody><tr><td class="nome">Ana' + interna + '</td><td class="email">a@a.com</td>'
+                '<td class="saldo">R$ 1,00</td><td class="perfil">Moderado</td></tr></tbody></table>')
+        self.assertEqual(len(self.nomes(html)), 1)
+
+    def test_tabela_sem_tbody_e_com_wrapper_div(self):
+        sem_tbody = '<table id="clientes">' + self.LINHA.format("Ana") + "</table>"
+        self.assertEqual(self.nomes(sem_tbody), ["Ana"])
+        wrapper = '<div id="clientes"><table>' + self.LINHA.format("Bia") + "</table></div>"
+        self.assertEqual(self.nomes(wrapper), ["Bia"])
+
+    def test_tags_inline_nao_quebram_palavras_e_br_separa(self):
+        casos = [("Jo<b>ão</b>", "João"), ("José <b>D'Ávila</b>", "José D'Ávila"),
+                 ("Maria<br>Silva", "Maria Silva"), ("  Ana \n  Lima  ", "Ana Lima"), ("<span>R</span>ui", "Rui")]
+        for html_nome, esperado in casos:
+            self.assertEqual(self.nomes('<table id="clientes">' + self.LINHA.format(html_nome) + "</table>"), [esperado], html_nome)
+
+    def test_saldo_com_marcacao_inline_continua_inteiro(self):
+        html = ('<table id="clientes"><tr><td class="nome">A</td><td class="email">a@a.com</td>'
+                '<td class="saldo">R$ <span>1.000</span>,00</td><td class="perfil">Moderado</td></tr></table>')
+        with contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(ec.extrair_clientes(html)[0]["saldo"], "R$ 1.000,00")
+
+
+class TestRespostasAnormais(BaseComServidor):
+    def test_422_mostra_motivos_dos_clientes_ignorados(self):
+        codigo, _, err = rodar_main(["--url", self.base + "/index", "--webhook", self.base + "/webhook-422-ignorados"])
+        self.assertEqual(codigo, 1)
+        self.assertNotIn("Traceback", err)
+        for trecho in ("Nenhum cliente válido", "Zé: e-mail inválido, saldo inválido", "(sem nome): nome ausente"):
+            self.assertIn(trecho, err)
+
+    def test_502_mostra_erro_e_detalhe_do_workflow(self):
+        codigo, _, err = rodar_main(["--url", self.base + "/index", "--webhook", self.base + "/webhook-502"])
+        self.assertEqual(codigo, 1)
+        self.assertIn("502", err)
+        self.assertIn("Não foi possível carregar a base de produtos", err)
+        self.assertIn("connect ECONNREFUSED", err)
+
+    def test_enviar_mantem_httperror_com_response_anexada(self):
+        with self.assertRaises(requests.HTTPError) as ctx:
+            ec.enviar_para_n8n([{"nome": "A"}], self.base + "/webhook-502")
+        self.assertEqual(ctx.exception.response.status_code, 502)
+
+    def test_resposta_json_com_tipos_errados_nao_gera_traceback(self):
+        codigo, out, err = rodar_main(["--url", self.base + "/index", "--webhook", self.base + "/webhook-malformado"])
+        self.assertEqual(codigo, 0, err)
+        self.assertNotIn("Traceback", err)
+        self.assertIn("so nome", out)
+
+    def test_mostrar_resposta_tolera_formas_inesperadas(self):
+        formas = [{}, {"resumo": None}, {"resumo": []}, {"mensagens": None}, {"mensagens": "x"}, {"mensagens": [None, 1, "a", []]},
+                  {"ignorados": [{"motivos": "texto"}, {"nome": 5, "motivos": [1, None]}, None]}, {"resumo": {"a": {"b": 1}}}]
+        for forma in formas:
+            with contextlib.redirect_stdout(io.StringIO()):
+                ec.mostrar_resposta(forma)  # não pode levantar
+
+    def test_dry_run_com_saida_avisa_em_stderr_e_nao_grava(self):
+        with tempfile.TemporaryDirectory() as pasta:
+            alvo = os.path.join(pasta, "resposta.json")
+            codigo, _, err = rodar_main(["--url", self.base + "/index", "--dry-run", "--saida", alvo])
+            self.assertEqual(codigo, 0)
+            self.assertIn("--saida é ignorado em --dry-run", err)
+            self.assertFalse(os.path.exists(alvo))
+
+
+class TestNotebookParidade(unittest.TestCase):
+    def celulas(self):
+        nb = json.loads(CAMINHO_NOTEBOOK.read_text(encoding="utf-8"))
+        return ["".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "code" and not "".join(c["source"]).startswith("!")]
+
+    def extrair_com_notebook(self, html):
+        """Roda a célula de extração do notebook contra um HTML (requests.get simulado)."""
+        celula = next(c for c in self.celulas() if "# 1) Baixar a página" in c)
+        resposta = mock.Mock(text=html)
+        ns = {"URL_PAGINA": "http://x", "requests": mock.Mock(get=mock.Mock(return_value=resposta))}
+        with contextlib.redirect_stdout(io.StringIO()):
+            exec(compile(celula.replace("import requests\n", ""), "<celula>", "exec"), ns)
+        return ns["clientes"]
+
+    def test_notebook_e_script_extraem_o_mesmo_nos_casos_de_borda(self):
+        linha = '<tr><td class="nome">{}</td><td class="email">a@a.com</td><td class="saldo">R$ 1,00</td><td class="perfil">Moderado</td></tr>'
+        casos = {
+            "real": HTML_REAL,
+            "tfoot": '<table id="clientes"><tbody>' + linha.format("Ana") + '</tbody><tfoot><tr><td>T</td><td>-</td><td>R$ 1</td><td>-</td></tr></tfoot></table>',
+            "sem_tbody": '<table id="clientes">' + linha.format("Ana") + "</table>",
+            "inline": '<table id="clientes">' + linha.format("Jo<b>ão</b>") + "</table>",
+            "br": '<table id="clientes">' + linha.format("Maria<br>Silva") + "</table>",
+            "sem_classes": '<table id="clientes"><tr><td>Ana</td><td>a@a.com</td><td>R$ 1,00</td><td>Moderado</td></tr></table>',
+        }
+        for nome, html in casos.items():
+            with contextlib.redirect_stderr(io.StringIO()):
+                esperado = ec.extrair_clientes(html)
+            self.assertEqual(self.extrair_com_notebook(html), esperado, nome)
 
 
 if __name__ == "__main__":

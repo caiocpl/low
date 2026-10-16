@@ -41,9 +41,19 @@ def extrair_clientes(html: str) -> list[dict]:
     Linhas incompletas são ignoradas com um aviso, em vez de derrubar o robô.
     """
     sopa = BeautifulSoup(html, "html.parser")
+    tabela = sopa.select_one("#clientes")
+    if tabela is None:
+        return []
+    alvo = tabela if tabela.name == "table" else (tabela.find("table") or tabela)
+    for quebra in alvo.find_all("br"):
+        quebra.replace_with(" ")  # <br> separa palavras; sem isso "Rua A<br>Centro" viraria "Rua ACentro"
+    # Linhas de dados: têm <td>, pertencem a esta tabela (não a uma aninhada) e não estão em <thead>/<tfoot>.
+    # Não exige <tbody>, que é opcional em HTML.
+    linhas = [
+        linha for linha in alvo.find_all("tr")
+        if linha.find("td") and linha.find_parent("table") is alvo and not linha.find_parent(["thead", "tfoot"])
+    ]
     clientes = []
-    # "#clientes tr" (e não "tbody tr"): <tbody> é opcional em HTML. Linhas do cabeçalho só têm <th>.
-    linhas = [linha for linha in sopa.select("#clientes tr") if linha.find("td")]
     for numero, linha in enumerate(linhas, start=1):
         colunas = linha.find_all("td")
         cliente = {}
@@ -51,13 +61,18 @@ def extrair_clientes(html: str) -> list[dict]:
             celula = linha.select_one(f"td.{campo}")
             if celula is None and posicao < len(colunas):
                 celula = colunas[posicao]
-            texto = celula.get_text(" ", strip=True) if celula is not None else ""
-            cliente[campo] = " ".join(texto.split())  # normaliza espaços (ex.: "José <b>D'Ávila</b>")
+            texto = celula.get_text() if celula is not None else ""
+            cliente[campo] = " ".join(texto.split())  # normaliza espaços; tags inline não quebram palavras ("Jo<b>ão</b>")
         if not all(cliente.values()):
             print(f"[aviso] linha {numero} ignorada (campos vazios): {cliente}", file=sys.stderr)
             continue
         clientes.append(cliente)
     return clientes
+
+
+def _lista(valor) -> list:
+    """Devolve `valor` se for lista; senão lista vazia (tolera respostas malformadas)."""
+    return valor if isinstance(valor, list) else []
 
 
 def _detalhe_do_erro(resposta: requests.Response) -> str:
@@ -66,6 +81,14 @@ def _detalhe_do_erro(resposta: requests.Response) -> str:
         corpo = resposta.json()
         if isinstance(corpo, dict):
             partes = [str(corpo[k]) for k in ("erro", "detalhe", "message") if corpo.get(k)]
+            # no 422 ("nenhum cliente válido") o porquê está nos motivos de cada cliente ignorado
+            ignorados = [i for i in _lista(corpo.get("ignorados")) if isinstance(i, dict)]
+            if ignorados:
+                resumo = "; ".join(
+                    f"{i.get('nome') or '(sem nome)'}: {', '.join(map(str, _lista(i.get('motivos'))))}"
+                    for i in ignorados[:5]
+                )
+                partes.append(f"ignorados -> {resumo}" + (" ..." if len(ignorados) > 5 else ""))
             if partes:
                 return " — ".join(partes)
     except ValueError:
@@ -95,15 +118,17 @@ def enviar_para_n8n(clientes: list[dict], webhook: str, timeout: int = 120) -> d
 
 def mostrar_resposta(dados: dict) -> None:
     """Imprime o resumo e as mensagens devolvidas pelo workflow."""
-    resumo = dados.get("resumo", {})
+    resumo = dados.get("resumo")
     print("\n=== Resumo ===")
-    for chave, valor in resumo.items():
-        print(f"  {chave}: {valor}")
-    for mensagem in dados.get("mensagens", []):
+    if isinstance(resumo, dict):
+        for chave, valor in resumo.items():
+            print(f"  {chave}: {valor}")
+    for mensagem in (m for m in _lista(dados.get("mensagens")) if isinstance(m, dict)):
         print(f"\n--- {mensagem.get('nome', '?')} <{mensagem.get('email', '?')}> [{mensagem.get('perfil', '?')}] ---")
         print(mensagem.get("mensagem", "(sem mensagem)"))
-    for ignorado in dados.get("ignorados", []):
-        print(f"\n[ignorado] {ignorado.get('nome') or '(sem nome)'}: {', '.join(ignorado.get('motivos', []))}")
+    for ignorado in (i for i in _lista(dados.get("ignorados")) if isinstance(i, dict)):
+        motivos = ", ".join(map(str, _lista(ignorado.get("motivos"))))
+        print(f"\n[ignorado] {ignorado.get('nome') or '(sem nome)'}: {motivos}")
 
 
 def main(argv=None) -> int:
@@ -117,6 +142,8 @@ def main(argv=None) -> int:
     parser.add_argument("--saida", metavar="ARQUIVO",
                         help="salva a resposta do N8N (JSON) neste arquivo")
     args = parser.parse_args(argv)
+    if args.dry_run and args.saida:
+        print("[aviso] --saida é ignorado em --dry-run (não há resposta do N8N para salvar).", file=sys.stderr)
 
     try:
         clientes = extrair_clientes(baixar_pagina(args.url))
