@@ -29,6 +29,7 @@ N_MONTAR = "Montar resposta"
 N_MONTAR_IA = "Montar resposta (IA)"
 N_OK = "Responder 200"
 N_ERRO = "Responder 422"
+N_ERRO_CSV = "Responder 502"
 N_AGENTE = "Agente de IA"
 N_MODELO = "Gemini Chat Model"
 N_NOTA = "Nota"
@@ -38,8 +39,12 @@ def codigo(nome_arquivo: str) -> str:
     return (SRC / nome_arquivo).read_text(encoding="utf-8").rstrip() + "\n"
 
 
+_contexto = {"workflow": ""}
+
+
 def uid(chave: str) -> str:
-    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"dio-assistente-investimentos/{chave}"))
+    """UUID determinístico por workflow: MVP e IA nunca compartilham ids de nó nem webhookId."""
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"dio-assistente-investimentos/{_contexto['workflow']}/{chave}"))
 
 
 def no(nome, tipo, versao, posicao, parametros, **extra):
@@ -60,11 +65,11 @@ def ligar(origem, destino, saida=0, tipo="main"):
     return {"node": destino, "type": tipo, "index": 0}
 
 
-def nos_comuns():
+def nos_comuns(caminho_webhook):
     """Nós compartilhados pelas duas versões, da entrada até o cruzamento."""
     return [
         no(N_WEBHOOK, "n8n-nodes-base.webhook", 2, (0, 300),
-           {"httpMethod": "POST", "path": "clientes", "responseMode": "responseNode", "options": {}},
+           {"httpMethod": "POST", "path": caminho_webhook, "responseMode": "responseNode", "options": {}},
            webhookId=uid("webhook-id")),
         no(N_VALIDAR, "n8n-nodes-base.code", 2, (240, 300),
            {"jsCode": codigo("validar_clientes.js")}),
@@ -103,7 +108,16 @@ def nos_comuns():
         no(N_BAIXAR, "n8n-nodes-base.httpRequest", 4.2, (960, 200), {
             "url": "={{ $json.csvUrl }}",
             "options": {"timeout": 15000, "response": {"response": {"responseFormat": "file"}}},
-        }, retryOnFail=True, maxTries=3, waitBetweenTries=2000),
+        }, retryOnFail=True, maxTries=3, waitBetweenTries=2000, onError="continueErrorOutput"),
+        # Falha ao baixar o data.csv (GitHub Pages fora do ar, URL errada...) -> 502 explicativo, nunca 200 vazio
+        no(N_ERRO_CSV, "n8n-nodes-base.respondToWebhook", 1.1, (1200, 420), {
+            "respondWith": "json",
+            "responseBody": (
+                "={{ JSON.stringify({ erro: 'Não foi possível carregar a base de produtos (data.csv)', "
+                "detalhe: $json.error && $json.error.message }) }}"
+            ),
+            "options": {"responseCode": 502},
+        }),
         no(N_LER, "n8n-nodes-base.extractFromFile", 1, (1200, 200),
            {"operation": "csv", "options": {}}),
         no(N_AGRUPAR, "n8n-nodes-base.aggregate", 1, (1440, 200), {
@@ -121,8 +135,9 @@ def nota(texto, largura=520, altura=300):
               {"content": texto, "height": altura, "width": largura})
 
 
-def workflow(nome, nos, conexoes):
+def workflow(id_workflow, nome, nos, conexoes):
     return {
+        "id": id_workflow,  # obrigatório para `n8n import:workflow` (sem id o import falha no SQLite)
         "name": nome,
         "nodes": nos,
         "connections": conexoes,
@@ -140,14 +155,15 @@ def conexoes_comuns():
         # saída 0 = verdadeiro (há clientes válidos); saída 1 = falso -> 422
         N_TEM_VALIDOS: {"main": [[ligar(N_TEM_VALIDOS, N_CONFIG)], [ligar(N_TEM_VALIDOS, N_ERRO)]]},
         N_CONFIG: {"main": [[ligar(N_CONFIG, N_BAIXAR)]]},
-        N_BAIXAR: {"main": [[ligar(N_BAIXAR, N_LER)]]},
+        N_BAIXAR: {"main": [[ligar(N_BAIXAR, N_LER)], [ligar(N_BAIXAR, N_ERRO_CSV)]]},
         N_LER: {"main": [[ligar(N_LER, N_AGRUPAR)]]},
         N_AGRUPAR: {"main": [[ligar(N_AGRUPAR, N_CRUZAR)]]},
     }
 
 
 def montar_mvp():
-    nos = nos_comuns() + [
+    _contexto["workflow"] = "mvp"
+    nos = nos_comuns("clientes") + [
         no(N_MONTAR, "n8n-nodes-base.code", 2, (1920, 200), {"jsCode": codigo("montar_resposta.js")}),
         no(N_OK, "n8n-nodes-base.respondToWebhook", 1.1, (2160, 200),
            {"respondWith": "firstIncomingItem", "options": {"responseCode": 200}}),
@@ -155,8 +171,9 @@ def montar_mvp():
             "## Assistente de Investimentos (MVP — mensagens estáticas)\n"
             "**Fluxo:** Webhook → valida clientes → baixa data.csv → cruza perfil × saldo × aporte mínimo → "
             "mensagem por template → responde ao RPA.\n\n"
-            "**Como usar:** ative o workflow, copie a *Production URL* do nó Webhook e configure em "
+            "**Como usar:** ative o workflow, copie a *Production URL* do nó Webhook (`/webhook/clientes`) e configure em "
             "`N8N_WEBHOOK` no script Python (src/extrair_clientes.py).\n\n"
+            "**CSV:** a URL do data.csv fica no nó *Config* — aponte para o GitHub Pages do seu fork.\n\n"
             "**Teste rápido:** `curl -X POST <URL> -H 'Content-Type: application/json' "
             "-d '{\"clientes\":[{\"nome\":\"Ana Silva\",\"email\":\"ana@email.com\",\"saldo\":\"R$ 12.500,00\",\"perfil\":\"Conservador\"}]}'`",
             altura=330),
@@ -164,10 +181,11 @@ def montar_mvp():
     con = conexoes_comuns()
     con[N_CRUZAR] = {"main": [[ligar(N_CRUZAR, N_MONTAR)]]}
     con[N_MONTAR] = {"main": [[ligar(N_MONTAR, N_OK)]]}
-    return workflow("Assistente de Investimentos — MVP (mensagens estáticas)", nos, con)
+    return workflow("dioassistinvmvp01", "Assistente de Investimentos — MVP (mensagens estáticas)", nos, con)
 
 
 def montar_ia():
+    _contexto["workflow"] = "ia"
     prompt_usuario = (
         "=Cliente: {{ $json.nome }}\n"
         "Perfil de investidor: {{ $json.perfil }}\n"
@@ -178,12 +196,12 @@ def montar_ia():
         ".join('\\n') : '(nenhum — o saldo ainda não alcança o aporte mínimo)' }}\n\n"
         "Escreva a mensagem para este cliente."
     )
-    nos = nos_comuns() + [
+    nos = nos_comuns("clientes-ia") + [
         no(N_AGENTE, "@n8n/n8n-nodes-langchain.agent", 1.7, (1920, 200), {
             "promptType": "define",
             "text": prompt_usuario,
             "options": {"systemMessage": codigo("prompt_agente_ia.txt").rstrip()},
-        }, retryOnFail=True, maxTries=2, waitBetweenTries=3000, onError="continueRegularOutput"),
+        }, onError="continueRegularOutput"),  # sem retry: o n8n reexecutaria o lote inteiro; o fallback é por cliente
         no(N_MODELO, "@n8n/n8n-nodes-langchain.lmChatGoogleGemini", 1, (1920, 440), {
             "modelName": "models/gemini-2.5-flash",
             "options": {"temperature": 0.4},
@@ -194,6 +212,7 @@ def montar_ia():
         nota(
             "## Assistente de Investimentos (IA generativa)\n"
             "Mesmo fluxo do MVP, com um **Agente de IA** que escreve uma mensagem única por cliente.\n\n"
+            "**Webhook próprio:** este fluxo responde em `/webhook/clientes-ia` (o MVP usa `/webhook/clientes`), então os dois podem ficar ativos juntos.\n\n"
             "**Antes de ativar:** abra o nó *Gemini Chat Model* e selecione sua credencial "
             "(Google Gemini API). Para usar OpenAI/Claude, troque esse nó por *OpenAI Chat Model* / "
             "*Anthropic Chat Model* e ligue-o à entrada *Chat Model* do Agente.\n\n"
@@ -206,7 +225,7 @@ def montar_ia():
     con[N_MODELO] = {"ai_languageModel": [[ligar(N_MODELO, N_AGENTE, tipo="ai_languageModel")]]}
     con[N_AGENTE] = {"main": [[ligar(N_AGENTE, N_MONTAR_IA)]]}
     con[N_MONTAR_IA] = {"main": [[ligar(N_MONTAR_IA, N_OK)]]}
-    return workflow("Assistente de Investimentos — IA generativa", nos, con)
+    return workflow("dioassistinvia001", "Assistente de Investimentos — IA generativa", nos, con)
 
 
 def posicionar_nota(wf):

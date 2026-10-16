@@ -10,10 +10,12 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const semAcento = (texto) =>
   String(texto ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();
 
-// "R$ 12.500,00" -> 12500 | "850" -> 850 | 1200.5 -> 1200.5 | inválido -> NaN
+// "R$ 12.500,00" -> 12500 | "850" -> 850 | 1200.5 -> 1200.5 | inválido ("abc", "1e3") -> NaN
 function paraNumero(valor) {
   if (typeof valor === 'number') return valor;
-  const limpo = String(valor ?? '').replace(/[^\d,.-]/g, '');
+  const semMoeda = String(valor ?? '').replace(/R\$/gi, '');
+  if (/[^\d\s,.-]/.test(semMoeda)) return NaN; // qualquer letra/símbolo estranho invalida o valor
+  const limpo = semMoeda.replace(/\s/g, '');
   if (!limpo) return NaN;
   if (limpo.includes(',')) return Number(limpo.replace(/\./g, '').replace(',', '.'));
   if (/^-?\d{1,3}(\.\d{3})+$/.test(limpo)) return Number(limpo.replace(/\./g, ''));
@@ -31,10 +33,10 @@ lista.forEach((cliente, indice) => {
   const c = cliente && typeof cliente === 'object' ? cliente : {};
   const motivos = [];
 
-  const nome = String(c.nome ?? '').trim();
+  const nome = String(c.nome ?? '').trim().replace(/\s+/g, ' ');
   const email = String(c.email ?? '').trim().toLowerCase();
   const perfil = PERFIS_VALIDOS[semAcento(c.perfil)];
-  const saldo = paraNumero(c.saldo);
+  const saldo = Math.round(paraNumero(c.saldo) * 100) / 100; // centavos: evita "R$ 100,00 (faltam R$ 0,00)"
 
   if (!nome) motivos.push('nome ausente');
   if (!EMAIL_REGEX.test(email)) motivos.push('e-mail inválido');

@@ -22,7 +22,7 @@ const PERFIS = {
     risco: 'Rentabilidade e liquidez variam conforme o produto e o emissor.',
   },
   moderado: {
-    abertura: 'Seu perfil busca equilíbrio entre segurança e crescimento, por isso combinamos renda fixa com exposição moderada à renda variável.',
+    abertura: 'Seu perfil busca equilíbrio entre segurança e crescimento, por isso combinamos títulos de renda fixa com fundos multimercado.',
     fechamento: 'Dividir o capital entre renda fixa e multimercado permite buscar retorno maior sem abrir mão de estabilidade.',
     risco: 'Fundos e títulos indexados podem oscilar no curto prazo.',
   },
@@ -38,14 +38,22 @@ const AVISO = 'Esta mensagem é informativa e não constitui recomendação de i
 // ---------- 1. Entradas ----------
 const { validos } = $('Validar clientes').first().json;
 
+// Cabeçalhos tolerantes: ignora BOM (CSV salvo pelo Excel), espaços e maiúsculas ("﻿Perfil" -> "perfil")
+const chaves = (linha) =>
+  Object.fromEntries(Object.entries(linha ?? {}).map(([k, v]) => [k.replace(/^﻿/, '').trim().toLowerCase(), v]));
+
+// Mínimo vazio/ausente NÃO vale zero: Number('') === 0 recomendaria o produto a qualquer saldo.
+const paraMinimo = (texto) => (String(texto ?? '').trim() === '' ? NaN : Number(String(texto).replace(',', '.')));
+
 const produtos = ($input.first().json.produtos ?? [])
+  .map(chaves)
   .map((p) => ({
     perfil: semAcento(p.perfil),
     produto: String(p.produto ?? '').trim(),
-    minimo: Number(String(p.minimo ?? '').replace(',', '.')),
+    minimo: paraMinimo(p.minimo),
     rentabilidade: String(p.rentabilidade ?? '').trim(),
   }))
-  .filter((p) => p.perfil && p.produto && Number.isFinite(p.minimo));
+  .filter((p) => p.perfil && p.produto && Number.isFinite(p.minimo) && p.minimo >= 0);
 
 // ---------- 2. Cruzamento + mensagem ----------
 const itens = validos.map((cliente) => {
@@ -89,7 +97,11 @@ const itens = validos.map((cliente) => {
     '',
     blocoProdutos,
     '',
-    elegiveis.length ? texto.fechamento : 'Quando o saldo permitir, teremos prazer em apresentar as melhores alternativas.',
+    elegiveis.length
+      ? texto.fechamento
+      : doPerfil.length
+        ? 'Quando o saldo permitir, teremos prazer em apresentar as melhores alternativas.'
+        : 'Assim que houver opções disponíveis para o seu perfil, entraremos em contato.',
     '',
     `${AVISO} ${texto.risco}`,
   ].join('\n');

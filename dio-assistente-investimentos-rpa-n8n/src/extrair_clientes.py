@@ -42,14 +42,17 @@ def extrair_clientes(html: str) -> list[dict]:
     """
     sopa = BeautifulSoup(html, "html.parser")
     clientes = []
-    for numero, linha in enumerate(sopa.select("#clientes tbody tr"), start=1):
+    # "#clientes tr" (e não "tbody tr"): <tbody> é opcional em HTML. Linhas do cabeçalho só têm <th>.
+    linhas = [linha for linha in sopa.select("#clientes tr") if linha.find("td")]
+    for numero, linha in enumerate(linhas, start=1):
         colunas = linha.find_all("td")
         cliente = {}
         for posicao, campo in enumerate(CAMPOS):
             celula = linha.select_one(f"td.{campo}")
             if celula is None and posicao < len(colunas):
                 celula = colunas[posicao]
-            cliente[campo] = celula.get_text(strip=True) if celula is not None else ""
+            texto = celula.get_text(" ", strip=True) if celula is not None else ""
+            cliente[campo] = " ".join(texto.split())  # normaliza espaços (ex.: "José <b>D'Ávila</b>")
         if not all(cliente.values()):
             print(f"[aviso] linha {numero} ignorada (campos vazios): {cliente}", file=sys.stderr)
             continue
@@ -57,11 +60,37 @@ def extrair_clientes(html: str) -> list[dict]:
     return clientes
 
 
+def _detalhe_do_erro(resposta: requests.Response) -> str:
+    """Extrai uma explicação legível do corpo de uma resposta de erro do N8N."""
+    try:
+        corpo = resposta.json()
+        if isinstance(corpo, dict):
+            partes = [str(corpo[k]) for k in ("erro", "detalhe", "message") if corpo.get(k)]
+            if partes:
+                return " — ".join(partes)
+    except ValueError:
+        pass
+    texto = " ".join(resposta.text.split())
+    return texto[:200] if texto else "(corpo vazio)"
+
+
 def enviar_para_n8n(clientes: list[dict], webhook: str, timeout: int = 120) -> dict:
-    """Envia {"clientes": [...]} ao Webhook por POST e devolve o JSON da resposta."""
+    """Envia {"clientes": [...]} ao Webhook por POST e devolve o JSON (objeto) da resposta."""
     resposta = requests.post(webhook, json={"clientes": clientes}, timeout=timeout)
-    resposta.raise_for_status()
-    return resposta.json()
+    try:
+        resposta.raise_for_status()
+    except requests.HTTPError as erro:
+        # mantém o tipo HTTPError, mas inclui o motivo que o workflow devolveu (ex.: 422/502 com {"erro": ...})
+        raise requests.HTTPError(f"{erro} :: {_detalhe_do_erro(resposta)}", response=resposta) from erro
+    try:
+        dados = resposta.json()
+    except ValueError:
+        raise ValueError(
+            f"resposta do N8N não é JSON (HTTP {resposta.status_code}): {_detalhe_do_erro(resposta)}"
+        ) from None
+    if not isinstance(dados, dict):
+        raise ValueError("resposta do N8N não é um objeto JSON")
+    return dados
 
 
 def mostrar_resposta(dados: dict) -> None:
@@ -71,10 +100,10 @@ def mostrar_resposta(dados: dict) -> None:
     for chave, valor in resumo.items():
         print(f"  {chave}: {valor}")
     for mensagem in dados.get("mensagens", []):
-        print(f"\n--- {mensagem['nome']} <{mensagem['email']}> [{mensagem['perfil']}] ---")
-        print(mensagem["mensagem"])
+        print(f"\n--- {mensagem.get('nome', '?')} <{mensagem.get('email', '?')}> [{mensagem.get('perfil', '?')}] ---")
+        print(mensagem.get("mensagem", "(sem mensagem)"))
     for ignorado in dados.get("ignorados", []):
-        print(f"\n[ignorado] {ignorado.get('nome') or '(sem nome)'}: {', '.join(ignorado['motivos'])}")
+        print(f"\n[ignorado] {ignorado.get('nome') or '(sem nome)'}: {', '.join(ignorado.get('motivos', []))}")
 
 
 def main(argv=None) -> int:
@@ -116,8 +145,13 @@ def main(argv=None) -> int:
 
     mostrar_resposta(dados)
     if args.saida:
-        with open(args.saida, "w", encoding="utf-8") as arquivo:
-            json.dump(dados, arquivo, ensure_ascii=False, indent=2)
+        try:
+            with open(args.saida, "w", encoding="utf-8") as arquivo:
+                json.dump(dados, arquivo, ensure_ascii=False, indent=2)
+        except OSError as erro:
+            print(f"[erro] o N8N respondeu normalmente, mas não foi possível gravar {args.saida}: {erro}",
+                  file=sys.stderr)
+            return 1
         print(f"\nResposta salva em {args.saida}")
     return 0
 
