@@ -243,19 +243,11 @@ python3 -m unittest discover -s tests               # 101 testes (1 pulado: vali
 | Mensagens geradas por LLM | ✅ Pronto (com ressalva) | Mesma ressalva acima. |
 | Documentação das decisões técnicas | ✅ Pronto | Este documento. |
 | **Print ou vídeo do fluxo funcionando** | ⏳ **A fazer por você** | Exige a sua instância do N8N. Sugestão de roteiro na seção 14. |
-| Repositório forkado com os arquivos | ⏳ **A fazer por você** | Instruções na seção 14. |
+| Repositório forkado com os arquivos | ✅ Pronto | Solução publicada na branch `main` deste fork. O notebook original da DIO continua em `rpa/`; a versão final, com o envio ao Webhook, está em `src/` (como o README do desafio manda). |
 
 ## 14. Próximos passos para concluir a entrega
 
-**Levar os arquivos para o seu fork** (`caiocpl/dio-lab-assistente-investimentos-rpa-n8n`):
-
-```bash
-git clone https://github.com/caiocpl/dio-lab-assistente-investimentos-rpa-n8n && cd dio-lab-assistente-investimentos-rpa-n8n
-# copie para dentro do clone: src/, n8n/, tests/, DOCUMENTACAO.md  (docs/ e README.md já existem)
-# o seu fork guarda o notebook em rpa/; o README do desafio manda ficar em src/ — a solução usa src/
-git add . && git commit -m "Solução: workflow N8N, RPA integrado, IA e documentação" && git push
-```
-Depois, publique o GitHub Pages do fork (*Settings → Pages → Deploy from branch → `/docs`*) e atualize o `csvUrl` no nó **Config**.
+**Publicar o GitHub Pages do fork** (*Settings → Pages → Deploy from branch → `main` → `/docs`*) e, no nó **Config** de cada workflow, trocar o `csvUrl` para o `data.csv` do seu fork (o padrão aponta para o repositório original da DIO). Se alterar o padrão no código, edite `URL_CSV` em `n8n/build.py` e rode `python3 n8n/build.py`.
 
 **Roteiro sugerido para o vídeo/print (≈ 2 min):**
 1. Mostrar a página de clientes e o `data.csv`.

@@ -12,8 +12,8 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 CHROME="${CHROME:-$(command -v chromium || command -v google-chrome || command -v chrome || echo /opt/pw-browsers/chromium-1194/chrome-linux/chrome)}"
-export LINK_URL="${LINK_URL:-https://github.com/caiocpl/low/tree/claude/relaxed-brahmagupta-x8uxm8/dio-assistente-investimentos-rpa-n8n}"
-export LINK_TEXT="${LINK_TEXT:-github.com/caiocpl/low › dio-assistente-investimentos-rpa-n8n}"
+export LINK_URL="${LINK_URL:-https://github.com/caiocpl/dio-lab-assistente-investimentos-rpa-n8n}"
+export LINK_TEXT="${LINK_TEXT:-github.com/caiocpl/dio-lab-assistente-investimentos-rpa-n8n}"
 SAIDA="apresentacao-assistente-investimentos.pdf"
 
 TMP="$(mktemp -d)"
