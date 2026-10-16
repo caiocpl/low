@@ -1,0 +1,336 @@
+{
+  "name": "Assistente de Investimentos — MVP (mensagens estáticas)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "clientes",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "id": "6745a246-9e76-5b20-b2e8-c7e2883dfe2f",
+      "name": "Webhook",
+      "webhookId": "c96f536d-bc02-585c-96da-891b1f9c178c"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Nó: \"Validar clientes\" (Code · Run Once for All Items)\n// Valida e padroniza os clientes enviados pelo RPA antes de qualquer cruzamento.\n//\n// Entrada : 1 item do Webhook  -> { body: { clientes: [{ nome, email, saldo, perfil }] } }\n// Saída   : 1 item             -> { recebidos, validos: [...], ignorados: [{ indice, nome, motivos }] }\n\nconst PERFIS_VALIDOS = { conservador: 'Conservador', moderado: 'Moderado', arrojado: 'Arrojado' };\nconst EMAIL_REGEX = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n\nconst semAcento = (texto) =>\n  String(texto ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();\n\n// \"R$ 12.500,00\" -> 12500 | \"850\" -> 850 | 1200.5 -> 1200.5 | inválido -> NaN\nfunction paraNumero(valor) {\n  if (typeof valor === 'number') return valor;\n  const limpo = String(valor ?? '').replace(/[^\\d,.-]/g, '');\n  if (!limpo) return NaN;\n  if (limpo.includes(',')) return Number(limpo.replace(/\\./g, '').replace(',', '.'));\n  if (/^-?\\d{1,3}(\\.\\d{3})+$/.test(limpo)) return Number(limpo.replace(/\\./g, ''));\n  return Number(limpo);\n}\n\nconst body = $input.first().json.body ?? {};\nconst lista = Array.isArray(body.clientes) ? body.clientes : [];\n\nconst validos = [];\nconst ignorados = [];\nconst emailsVistos = new Set();\n\nlista.forEach((cliente, indice) => {\n  const c = cliente && typeof cliente === 'object' ? cliente : {};\n  const motivos = [];\n\n  const nome = String(c.nome ?? '').trim();\n  const email = String(c.email ?? '').trim().toLowerCase();\n  const perfil = PERFIS_VALIDOS[semAcento(c.perfil)];\n  const saldo = paraNumero(c.saldo);\n\n  if (!nome) motivos.push('nome ausente');\n  if (!EMAIL_REGEX.test(email)) motivos.push('e-mail inválido');\n  else if (emailsVistos.has(email)) motivos.push('e-mail duplicado no lote');\n  if (!perfil) motivos.push('perfil desconhecido (use Conservador, Moderado ou Arrojado)');\n  if (!Number.isFinite(saldo) || saldo < 0) motivos.push('saldo inválido');\n\n  if (motivos.length) {\n    ignorados.push({ indice, nome: nome || null, motivos });\n    return;\n  }\n  emailsVistos.add(email);\n  validos.push({ nome, email, perfil, saldo });\n});\n\nreturn [{ json: { recebidos: lista.length, validos, ignorados } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "id": "12712c4e-40d0-5dce-980c-34ddc7e74816",
+      "name": "Validar clientes"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e9171db8-e6c3-5771-826d-8b9127f44002",
+              "leftValue": "={{ $json.validos.length > 0 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        300
+      ],
+      "id": "ae9aa342-628b-56f6-ad2c-9edff12cca7d",
+      "name": "Tem clientes válidos?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ erro: 'Nenhum cliente válido no payload. Envie {\"clientes\":[{\"nome\",\"email\",\"saldo\",\"perfil\"}]}', recebidos: $json.recebidos, ignorados: $json.ignorados }) }}",
+        "options": {
+          "responseCode": 422
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        500
+      ],
+      "id": "2260d987-d17d-56a8-90e3-aadc7fd0fdf7",
+      "name": "Responder 422"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "31482634-0197-554c-9878-5b7fd0da0ec9",
+              "name": "csvUrl",
+              "value": "https://digitalinnovationone.github.io/dio-lab-assistente-investimentos-rpa-n8n/data.csv",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        720,
+        200
+      ],
+      "id": "1ebbbb73-9637-5f92-a6a8-1742c8343a6e",
+      "name": "Config"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.csvUrl }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        200
+      ],
+      "id": "50c98567-54d0-58cb-b478-28eb9485b60b",
+      "name": "Baixar data.csv",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "operation": "csv",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        200
+      ],
+      "id": "51439241-ee4f-526f-8d50-a64283529e7c",
+      "name": "Ler CSV"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "produtos",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        200
+      ],
+      "id": "4ce1dbd7-43bb-506f-8919-ece216cbe630",
+      "name": "Agrupar produtos"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Nó: \"Cruzar clientes x investimentos\" (Code · Run Once for All Items)\n// Cruza cada cliente validado com as opções do data.csv e gera a mensagem (template por perfil).\n//\n// Entrada : 1 item do nó \"Agrupar produtos\" -> { produtos: [{ perfil, produto, minimo, rentabilidade }] }\n//           + clientes validados, lidos do nó \"Validar clientes\"\n// Saída   : 1 item por cliente -> { nome, email, perfil, saldo, produtosRecomendados, assunto, mensagem, geradoPor }\n\nconst semAcento = (texto) =>\n  String(texto ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase();\n\n// 12500 -> \"R$ 12.500,00\" (formatação manual: não depende do ICU do servidor)\nconst brl = (n) => 'R$ ' + n.toFixed(2).replace('.', ',').replace(/\\B(?=(\\d{3})+(?!\\d))/g, '.');\n\n// \"6.2%\" -> \"6,2%\" | \"IPCA+6.0%\" -> \"IPCA+6,0%\" | \"Variável\" -> \"Variável\"\nconst rentabilidadePtBr = (texto) => String(texto).trim().replace('.', ',');\n\n// Texto de cada perfil (MVP: mensagens estáticas, conforme o roteiro do desafio)\nconst PERFIS = {\n  conservador: {\n    abertura: 'Seu perfil prioriza segurança e liquidez, por isso selecionamos opções de renda fixa com menor risco.',\n    fechamento: 'Concentrar sua carteira em renda fixa ajuda a proteger o patrimônio e a manter sua reserva disponível quando precisar.',\n    risco: 'Rentabilidade e liquidez variam conforme o produto e o emissor.',\n  },\n  moderado: {\n    abertura: 'Seu perfil busca equilíbrio entre segurança e crescimento, por isso combinamos renda fixa com exposição moderada à renda variável.',\n    fechamento: 'Dividir o capital entre renda fixa e multimercado permite buscar retorno maior sem abrir mão de estabilidade.',\n    risco: 'Fundos e títulos indexados podem oscilar no curto prazo.',\n  },\n  arrojado: {\n    abertura: 'Seu perfil aceita oscilações em troca de maior potencial de retorno, por isso destacamos opções de renda variável.',\n    fechamento: 'Diversificar entre ETFs e fundos de ações reduz a concentração de risco; mantenha também uma reserva de liquidez.',\n    risco: 'Renda variável e criptomoedas podem gerar perdas, inclusive do capital investido.',\n  },\n};\n\nconst AVISO = 'Esta mensagem é informativa e não constitui recomendação de investimento; rentabilidade passada não garante resultado futuro.';\n\n// ---------- 1. Entradas ----------\nconst { validos } = $('Validar clientes').first().json;\n\nconst produtos = ($input.first().json.produtos ?? [])\n  .map((p) => ({\n    perfil: semAcento(p.perfil),\n    produto: String(p.produto ?? '').trim(),\n    minimo: Number(String(p.minimo ?? '').replace(',', '.')),\n    rentabilidade: String(p.rentabilidade ?? '').trim(),\n  }))\n  .filter((p) => p.perfil && p.produto && Number.isFinite(p.minimo));\n\n// ---------- 2. Cruzamento + mensagem ----------\nconst itens = validos.map((cliente) => {\n  const chave = semAcento(cliente.perfil);\n  const texto = PERFIS[chave];\n  const primeiroNome = cliente.nome.split(/\\s+/)[0];\n\n  const doPerfil = produtos.filter((p) => p.perfil === chave);\n  const elegiveis = doPerfil\n    .filter((p) => p.minimo <= cliente.saldo)\n    .map((p) => ({\n      produto: p.produto,\n      minimo: p.minimo,\n      minimoFormatado: brl(p.minimo),\n      rentabilidade: p.rentabilidade,\n      rentabilidadeFormatada: rentabilidadePtBr(p.rentabilidade),\n    }));\n\n  let blocoProdutos;\n  if (elegiveis.length) {\n    blocoProdutos =\n      'Opções compatíveis com o seu perfil e o seu saldo:\\n' +\n      elegiveis\n        .map((p) => `• ${p.produto} — aporte mínimo ${p.minimoFormatado} — rentabilidade ${p.rentabilidadeFormatada}`)\n        .join('\\n');\n  } else if (doPerfil.length) {\n    const menor = doPerfil.reduce((a, b) => (b.minimo < a.minimo ? b : a));\n    blocoProdutos =\n      `Hoje o seu saldo ainda não alcança o aporte mínimo das opções do seu perfil. ` +\n      `A porta de entrada é ${menor.produto}, com aporte mínimo de ${brl(menor.minimo)} ` +\n      `(faltam ${brl(menor.minimo - cliente.saldo)}).`;\n  } else {\n    blocoProdutos = 'No momento não há opções cadastradas para o seu perfil.';\n  }\n\n  const mensagem = [\n    `Olá, ${primeiroNome}!`,\n    '',\n    `Seu perfil de investidor é ${cliente.perfil} e o seu saldo atual é ${brl(cliente.saldo)}.`,\n    texto.abertura,\n    '',\n    blocoProdutos,\n    '',\n    elegiveis.length ? texto.fechamento : 'Quando o saldo permitir, teremos prazer em apresentar as melhores alternativas.',\n    '',\n    `${AVISO} ${texto.risco}`,\n  ].join('\\n');\n\n  return {\n    json: {\n      nome: cliente.nome,\n      email: cliente.email,\n      perfil: cliente.perfil,\n      saldo: cliente.saldo,\n      saldoFormatado: brl(cliente.saldo),\n      produtosRecomendados: elegiveis,\n      assunto: `${primeiroNome}, veja opções de investimento para o seu perfil ${cliente.perfil}`,\n      mensagem,\n      geradoPor: 'template',\n    },\n  };\n});\n\nreturn itens;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1680,
+        200
+      ],
+      "id": "ae701752-eff5-5aef-937e-95e3373fa7b1",
+      "name": "Cruzar clientes x investimentos"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Nó: \"Montar resposta\" (Code · Run Once for All Items)\n// Consolida as mensagens em um único JSON — é o que o Webhook devolve ao script de RPA.\n//\n// Entrada : 1 item por cliente (saída de \"Cruzar clientes x investimentos\")\n// Saída   : 1 item -> { resumo: { recebidos, processados, ignorados }, mensagens: [...], ignorados: [...] }\n\nconst mensagens = $input.all().map((item) => item.json);\nconst { recebidos, ignorados } = $('Validar clientes').first().json;\n\nreturn [\n  {\n    json: {\n      resumo: { recebidos, processados: mensagens.length, ignorados: ignorados.length },\n      mensagens,\n      ignorados,\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        200
+      ],
+      "id": "0c6c8cee-336c-5dbc-a7cb-3c49ef6cd89c",
+      "name": "Montar resposta"
+    },
+    {
+      "parameters": {
+        "respondWith": "firstIncomingItem",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2160,
+        200
+      ],
+      "id": "f008b596-0a69-5ce8-a36b-d96ae8ecbba9",
+      "name": "Responder 200"
+    },
+    {
+      "parameters": {
+        "content": "## Assistente de Investimentos (MVP — mensagens estáticas)\n**Fluxo:** Webhook → valida clientes → baixa data.csv → cruza perfil × saldo × aporte mínimo → mensagem por template → responde ao RPA.\n\n**Como usar:** ative o workflow, copie a *Production URL* do nó Webhook e configure em `N8N_WEBHOOK` no script Python (src/extrair_clientes.py).\n\n**Teste rápido:** `curl -X POST <URL> -H 'Content-Type: application/json' -d '{\"clientes\":[{\"nome\":\"Ana Silva\",\"email\":\"ana@email.com\",\"saldo\":\"R$ 12.500,00\",\"perfil\":\"Conservador\"}]}'`",
+        "height": 330,
+        "width": 520
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -220
+      ],
+      "id": "3c7bb2de-fbfc-55af-bfe9-dbef99db2773",
+      "name": "Nota"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validar clientes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar clientes": {
+      "main": [
+        [
+          {
+            "node": "Tem clientes válidos?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem clientes válidos?": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Responder 422",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Baixar data.csv",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baixar data.csv": {
+      "main": [
+        [
+          {
+            "node": "Ler CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ler CSV": {
+      "main": [
+        [
+          {
+            "node": "Agrupar produtos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agrupar produtos": {
+      "main": [
+        [
+          {
+            "node": "Cruzar clientes x investimentos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cruzar clientes x investimentos": {
+      "main": [
+        [
+          {
+            "node": "Montar resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar resposta": {
+      "main": [
+        [
+          {
+            "node": "Responder 200",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
