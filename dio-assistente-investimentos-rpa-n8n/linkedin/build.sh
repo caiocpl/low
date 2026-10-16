@@ -22,7 +22,10 @@ python3 - "$TMP/apresentacao.html" <<'PY'
 import html, os, sys
 src = open("apresentacao.html", encoding="utf-8").read()
 src = src.replace("{{LINK_URL}}", html.escape(os.environ["LINK_URL"], quote=True))
-src = src.replace("{{LINK_TEXT}}", html.escape(os.environ["LINK_TEXT"]))
+texto = html.escape(os.environ["LINK_TEXT"])
+i = texto.rfind("/")  # quebra de linha só na última barra: o nome do repositório nunca é partido
+texto = texto[: i + 1] + '<wbr><span class="nw">' + texto[i + 1 :] + "</span>" if i >= 0 else texto
+src = src.replace("{{LINK_TEXT}}", texto)
 open(sys.argv[1], "w", encoding="utf-8").write(src)
 PY
 

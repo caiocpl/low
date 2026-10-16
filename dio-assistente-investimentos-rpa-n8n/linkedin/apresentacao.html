@@ -74,10 +74,10 @@
   .s4 td{ padding:15px 20px }
   .s4 .lead{ margin-bottom:18px }
   .s5 td{ padding:18px 20px; font-size:30px }
-  .s5 td small{ font-size:27px }
+  .s5 td small{ font-size:29px }
   .s5 th:first-child, .s5 td:first-child{ width:46% }
   .s5 .lead{ margin-bottom:16px }
-  .s5 .limit{ margin-top:14px; font-size:27px; padding:18px 26px }
+  .s5 .limit{ margin-top:14px; font-size:30px; padding:18px 26px }
   .s6 table.http td{ padding:26px 20px }
 
   .tag{ display:inline-block; font-size:28px; font-weight:800; padding:4px 16px; border-radius:10px; vertical-align:middle }
@@ -89,7 +89,7 @@
   .big{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin:26px 0 34px }
   .big .card{ background:var(--surface); border:2px solid var(--line); border-radius:26px; padding:28px 26px }
   .big .v{ font-size:76px; font-weight:800; line-height:1; color:var(--amber) }
-  .big .l{ font-size:27px; color:var(--muted); margin-top:12px; line-height:1.28 }
+  .big .l{ font-size:30px; color:var(--muted); margin-top:12px; line-height:1.28 }
 
   ul.list{ list-style:none; padding:0; margin:0 }
   ul.list li{ font-size:33px; line-height:1.32; padding:14px 0 14px 50px; position:relative; border-bottom:1px solid var(--line) }
@@ -97,8 +97,9 @@
   ul.list li::before{ content:"✓"; position:absolute; left:0; top:12px; color:var(--teal); font-weight:800; font-size:36px }
   ul.list.bad li::before{ content:"!"; color:var(--red) }
 
-  .limit{ border:2px dashed var(--line); border-radius:22px; padding:22px 28px; font-size:29px; line-height:1.36; color:var(--muted); margin-top:26px }
+  .limit{ border:2px dashed var(--line); border-radius:22px; padding:22px 28px; font-size:31px; line-height:1.36; color:var(--muted); margin-top:26px }
   .limit b{ color:var(--text) }
+  .nw{ white-space:nowrap }
   .note{ font-size:29px; color:var(--muted); line-height:1.36; margin-top:22px }
   .note b{ color:var(--text) }
   .ask{ font-size:34px; line-height:1.36; margin:32px 0 0; padding:26px 32px; border-radius:24px; background:var(--surface2) }
@@ -155,7 +156,7 @@
     <div class="arrow">↓</div>
     <div class="node ok"><span class="n">Responde ao robô</span><span class="d">JSON com as mensagens</span></div>
   </div>
-  <div class="note">Se algo falha no caminho, o fluxo responde com o motivo (página 6).</div>
+  <div class="note">Se algo falha, o fluxo responde com o motivo (página&nbsp;6).</div>
   <div class="foot"><span>Caio Louback</span><span>DIO · RPA + N8N</span></div>
 </section>
 
@@ -197,8 +198,8 @@
   <h2>Quando dá errado, <span class="accent">avisar</span> — nunca fingir que deu certo</h2>
   <table class="http">
     <tr><th>Código</th><th>O que o sistema responde</th></tr>
-    <tr><td><span class="tag t200">200</span></td><td>deu certo: devolve as mensagens</td></tr>
-    <tr><td><span class="tag t422">422</span></td><td>dado inválido: lista o motivo de cada cliente</td></tr>
+    <tr><td><span class="tag t200">200</span></td><td>deu certo: devolve as mensagens (clientes inválidos vêm à parte)</td></tr>
+    <tr><td><span class="tag t422">422</span></td><td>nenhum cliente válido: lista o motivo de cada um</td></tr>
     <tr><td><span class="tag t502">502</span></td><td>base de produtos fora do ar</td></tr>
   </table>
   <ul class="list" style="margin-top:6px">
@@ -211,13 +212,13 @@
 <!-- 7. QUALIDADE -->
 <section class="slide">
   <div class="top"><span>Qualidade</span><span>7/8</span></div>
-  <h2>Como <span class="accent">testei e verifiquei</span></h2>
+  <h2>Como foi <span class="accent">testado e verificado</span></h2>
   <div class="big">
     <div class="card"><div class="v">203</div><div class="l">testes automatizados (JavaScript e Python), 1 pulado</div></div>
-    <div class="card"><div class="v">3</div><div class="l">rodadas de verificação por agentes de IA independentes</div></div>
+    <div class="card"><div class="v">3</div><div class="l">rodadas de verificação por agentes de IA</div></div>
     <div class="card"><div class="v">20/20</div><div class="l">testes em N8N real na última rodada (só o que mudou)</div></div>
   </div>
-  <p style="font-size:30px; margin-bottom:8px"><b>O que a verificação achou — e foi corrigido:</b></p>
+  <p style="font-size:33px; margin-bottom:8px"><b>O que a verificação achou — e foi corrigido:</b></p>
   <ul class="list bad">
     <li>O fluxo não importava no N8N (faltava um identificador)</li>
     <li>O filtro da IA deixava passar 42 de 70 promessas de retorno</li>
@@ -234,14 +235,14 @@
   <ul class="list">
     <li>Regra de negócio fica no código, onde dá para testar; a IA fica com o texto</li>
     <li>Teste o erro, não só o caminho feliz: foi onde apareceu boa parte dos defeitos</li>
-    <li>Uma revisão independente (aqui, agentes de IA) acha o que o autor não vê</li>
+    <li>Quem não escreveu o código (aqui, agentes de IA) acha o que o autor não vê</li>
   </ul>
   <div class="ask"><b class="accent">E você?</b> Que rotina de mensagem ou relatório, na sua operação, valeria automatizar?</div>
   <div class="cta">
     <div style="font-size:28px; color:var(--muted); margin-bottom:8px">Código, testes e documentação</div>
     <div class="u"><a href="{{LINK_URL}}">{{LINK_TEXT}}</a></div>
   </div>
-  <div class="note">Projeto do desafio DIO, construído com apoio de IA generativa (Claude), inclusive nos testes e nas verificações.</div>
+  <div class="note">Projeto do desafio DIO desenvolvido com o Claude (IA generativa), que escreveu o código, os testes e a documentação. Agentes de IA fizeram a verificação.</div>
   <div class="foot"><span>Caio Louback</span><span>DIO · RPA + N8N</span></div>
 </section>
 
