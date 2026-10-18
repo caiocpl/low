@@ -2,13 +2,13 @@ import { test as base, expect, type Page } from '@playwright/test';
 
 /** Falha o teste se houver erro de console ou exceção não tratada (requisito: "não tolerar console error silencioso"). */
 export const test = base.extend<{ consoleErrors: string[] }>({
-  consoleErrors: async ({ page }, use) => {
+  consoleErrors: async ({ page }, provide) => {
     const errors: string[] = [];
     page.on('console', (m) => {
       if (m.type() === 'error') errors.push(m.text());
     });
     page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
-    await use(errors);
+    await provide(errors);
     expect(errors, 'Erros de console durante o teste').toEqual([]);
   },
 });
