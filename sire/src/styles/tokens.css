@@ -1,0 +1,88 @@
+/*
+ * Design tokens do SIRE.
+ * Paleta PROPOSTA inspirada em tons corporativos teal/verde — não são códigos institucionais oficiais.
+ * Contrastes de texto verificados para WCAG AA (≥ 4,5:1) sobre os fundos indicados.
+ */
+:root {
+  /* Marca */
+  --brand-800: #004e4a;
+  --brand-700: #00655f;
+  --brand-600: #007e79; /* primária */
+  --brand-500: #00a88f; /* acento */
+  --brand-100: #d2ece9;
+  --brand-50: #ebf6f5;
+  --attention-500: #f2b526;
+  --attention-50: #fef6df;
+
+  /* Neutros */
+  --ink-900: #1d3435; /* texto principal — 12,6:1 sobre branco */
+  --ink-700: #3a5253;
+  --ink-600: #4f6667; /* texto secundário — 6,4:1 */
+  --ink-500: #657a7b; /* texto terciário — 4,7:1 */
+  --ink-300: #a9b8b8;
+  --line: #dde5e5;
+  --line-strong: #c4d0d0;
+  --bg: #f6f8f8;
+  --surface: #ffffff;
+  --surface-2: #f1f5f5;
+  --surface-3: #e8eeee;
+  --nav-bg: #0f2a2a;
+  --nav-ink: #c9dcdb;
+  --nav-ink-strong: #ffffff;
+  --nav-hover: #173a3a;
+
+  /* Semânticas (texto / fundo / borda) */
+  --info-700: #1d5aa0;
+  --info-50: #e9f1fb;
+  --info-200: #bcd4f0;
+  --success-700: #0b6b45;
+  --success-50: #e4f5ec;
+  --success-200: #b4e2c9;
+  --warning-700: #7a4f00;
+  --warning-50: #fff5da;
+  --warning-200: #f5d98c;
+  --critical-700: #b42318;
+  --critical-600: #d92d20;
+  --critical-50: #fdeceb;
+  --critical-200: #f6c2bd;
+  --muted-700: #4f6667;
+  --muted-50: #eef2f2;
+  --muted-200: #d3dcdc;
+
+  /* Tipografia */
+  --font: 'Segoe UI Variable Text', 'Segoe UI', Inter, system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'Cascadia Mono', 'Consolas', 'SFMono-Regular', ui-monospace, monospace;
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-md: 14px;
+  --fs-lg: 16px;
+  --fs-xl: 20px;
+  --fs-2xl: 24px;
+  --fs-3xl: 30px;
+  --lh-tight: 1.25;
+  --lh: 1.5;
+
+  /* Espaçamento — grid de 8px (4px para ajustes finos) */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 40px;
+  --s-8: 48px;
+
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --shadow-1: 0 1px 2px rgba(15, 42, 42, 0.06), 0 1px 3px rgba(15, 42, 42, 0.06);
+  --shadow-2: 0 4px 12px rgba(15, 42, 42, 0.08), 0 1px 3px rgba(15, 42, 42, 0.06);
+  --shadow-3: 0 16px 40px rgba(15, 42, 42, 0.18);
+  --focus: 0 0 0 3px rgba(0, 126, 121, 0.35);
+
+  --sidebar-w: 248px;
+  --topbar-h: 60px;
+  --banner-h: 28px;
+  --content-max: 1440px;
+  --t-fast: 120ms ease;
+}

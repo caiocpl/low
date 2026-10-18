@@ -1,0 +1,11 @@
+node_modules
+dist
+playwright-report
+test-results
+*.tsbuildinfo
+.env
+.env.*
+# Materiais de referência contêm dados reais — nunca versionar
+referencias/*.pptx
+referencias/*.pdf
+referencias/extraido/
