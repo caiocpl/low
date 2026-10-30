@@ -40,3 +40,7 @@
 
 - Ícones de plataforma: a versão 2026 usava bitmaps coloridos extraídos do PDF (o de TikTok com fundo chapado, descartado). No v4, as plataformas aparecem como nome + ponto na cor oficial. Se quiser ícones, usar os vetores oficiais de cada marca (não foi possível baixá-los nesta sessão).
 - Nenhuma mudança de marca: azul, preto, branco, Inter e o logotipo 2026 foram mantidos.
+
+## 6. Caminho alternativo já executado: HTML → PDF
+
+Como o servidor MCP do Figma bloqueou as chamadas por limite do plano Starter antes do encaixe das imagens, o media kit final foi gerado também em `html/` (mesmas medidas, cores, tipografia e redação) e exportado para `revisao/CloserTech-MediaKit-v4-PT.pdf` e `-EN.pdf` com imagens reais e links. Para regenerar: `cd html && node build.js && node render.js` (requer Node 18+ e Playwright com Chromium). O arquivo Figma segue como fonte editável; `figma/finalizar-v4.js` aplica no Figma o que faltou.

@@ -1,0 +1,112 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>CloserTech · Media Kit v4 (en)</title><style>
+@font-face{font-family:Inter;font-weight:400;src:url(fonts/inter-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:Inter;font-weight:500;src:url(fonts/inter-latin-500-normal.woff2) format("woff2")}
+@font-face{font-family:Inter;font-weight:600;src:url(fonts/inter-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:Inter;font-weight:700;src:url(fonts/inter-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:Inter;font-weight:800;src:url(fonts/inter-latin-800-normal.woff2) format("woff2")}
+:root{--blue:#2F3CFF;--black:#0B0B14;--body:#3A3F52;--sec:#5B6070;--border:#E3E6F0;--surf:#F4F6FA;--lav:#E9ECFF;--b300:#8E97FF;--b200:#AEB5FF;--b100:#E4E7FF;--warn:#D95A00}
+*{box-sizing:border-box;margin:0;padding:0}
+@page{size:A4;margin:0}
+html,body{background:#E5E5E5}
+body{font-family:Inter,system-ui,sans-serif;color:var(--body);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.page{width:595pt;height:842pt;padding:42pt;background:#fff;display:flex;flex-direction:column;gap:16pt;margin:0 auto 12pt;page-break-after:always;break-after:page;overflow:hidden;position:relative}
+@media print{html,body{background:#fff}.page{margin:0}}
+a{color:inherit;text-decoration:none}
+.hdr{display:flex;justify-content:space-between;align-items:center}
+.hdr img{height:17.2pt;width:auto}
+.eyebrow{font-size:8pt;line-height:10pt;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--blue)}
+.eyebrow.sec{color:var(--sec)}
+.display{font-size:50pt;line-height:52pt;font-weight:800;letter-spacing:-.025em;color:var(--black)}
+.h1{font-size:30pt;line-height:34pt;font-weight:800;letter-spacing:-.015em;color:var(--black)}
+.numXL{font-size:44pt;line-height:46pt;font-weight:800;letter-spacing:-.02em;color:var(--blue)}
+.numL{font-size:28pt;line-height:30pt;font-weight:800;letter-spacing:-.02em;color:var(--blue)}
+.numM{font-size:17pt;line-height:20pt;font-weight:800;letter-spacing:-.01em;color:var(--black)}
+.ptile .numM{font-size:14pt;line-height:18pt;white-space:nowrap}
+.subL{font-size:12.5pt;line-height:18pt}
+.subM{font-size:11pt;line-height:14pt;font-weight:600;color:var(--black)}
+.body{font-size:9.5pt;line-height:13.5pt}
+.bodyB{font-size:9.5pt;line-height:13.5pt;font-weight:600;color:var(--black)}
+.label{font-size:8pt;line-height:10.5pt;font-weight:500;color:var(--sec)}
+.note{font-size:8pt;line-height:11pt;color:var(--sec)}
+.warn{color:var(--warn)}
+.blue{color:var(--blue)}.black{color:var(--black)}
+.title{display:flex;flex-direction:column;gap:10pt;padding-top:22pt}
+.ftr{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;gap:16pt}
+.ftr .note{width:430pt}
+.hero{display:flex;flex-direction:column;gap:14pt;padding-top:44pt}
+.row{display:flex;gap:28pt;padding-top:14pt}
+.col{display:flex;flex-direction:column;gap:14pt;flex:1}
+.creator{display:flex;gap:4pt;align-items:center}
+.ind{display:flex;gap:12pt;padding-top:6pt}
+.ind .numL{white-space:nowrap;font-size:27pt}
+.tile{flex:1;background:var(--surf);border-radius:10pt;padding:12pt;display:flex;flex-direction:column;gap:4pt}
+.portrait{width:200pt;height:250pt;border-radius:16pt;background:var(--lav);overflow:hidden;flex:none}
+.portrait img{width:100%;height:100%;object-fit:cover;object-position:top}
+.plat{display:flex;gap:8pt}
+.ptile{flex:1;border:1pt solid var(--border);border-radius:10pt;padding:9pt 8pt;display:flex;flex-direction:column;gap:3pt}
+.dot{display:inline-block;width:8pt;height:8pt;border-radius:50%;margin-right:5pt;vertical-align:-1pt}
+.card{background:var(--surf);border-radius:12pt;padding:18pt 20pt;display:flex;gap:24pt;align-items:center}
+.card .l{width:200pt;display:flex;flex-direction:column;gap:2pt}
+.card .r{flex:1;display:flex;flex-direction:column;gap:6pt}
+.bul::before{content:"";display:inline-block;width:5pt;height:5pt;border-radius:50%;background:var(--blue);margin-right:6pt;vertical-align:1.5pt}
+.bands{display:flex;gap:12pt}
+.band{flex:1;display:flex;flex-direction:column;gap:6pt}
+.dots{display:flex;gap:4pt}
+.dots i{width:10pt;height:10pt;border-radius:50%;display:block}
+.rings{display:flex;gap:28pt}
+.ring{display:flex;gap:10pt;align-items:center}
+.ring .lbl{width:88pt;font-size:9.5pt;line-height:13.5pt}
+.sec-block{display:flex;flex-direction:column;gap:8pt}
+.strip{display:flex;justify-content:space-between;align-items:center;gap:8pt}
+.brand{display:flex;gap:6pt;align-items:center;font-size:8pt;font-weight:500;color:var(--black)}
+.brand img{width:22pt;height:22pt;border-radius:5pt;object-fit:cover}
+.main{background:var(--surf);border-radius:12pt;padding:14pt;display:flex;gap:16pt}
+.main .frame{width:110pt;height:196pt;border-radius:8pt;overflow:hidden;flex:none;background:var(--b100)}
+.main .frame img,.comp .img img{width:100%;height:100%;object-fit:cover}
+.main .txt{display:flex;flex-direction:column;gap:7pt;flex:1}
+.comps{display:flex;gap:12pt}
+.comp{flex:1;display:flex;flex-direction:column;gap:6pt}
+.comp .img{height:82pt;border-radius:8pt;overflow:hidden;background:var(--b100)}
+.steps{display:flex;gap:12pt}
+.step{flex:1;display:flex;gap:8pt;align-items:flex-start}
+.step.v{flex-direction:column;gap:6pt}
+.num{width:22pt;height:22pt;border-radius:50%;background:var(--blue);color:#fff;font-size:12pt;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+.chips{display:flex;flex-wrap:wrap;gap:6pt}
+.chip{background:var(--surf);border-radius:20pt;padding:4pt 9pt;font-size:8pt;font-weight:500}
+.cards{display:flex;gap:10pt;align-items:stretch}
+.pack{flex:1;border:1pt solid var(--border);border-radius:10pt;padding:12pt;display:flex;flex-direction:column;gap:6pt;background:#fff}
+.pack.rec{background:var(--lav);border:1.5pt solid var(--blue)}
+.pack .price{margin-top:auto;padding-top:6pt}
+.terms{display:flex;gap:12pt}
+.term{flex:1;display:flex;flex-direction:column;gap:3pt}
+.cta{background:var(--black);border-radius:12pt;padding:22pt 24pt;display:flex;flex-direction:column;gap:10pt;color:#fff}
+.cta .t{font-size:30pt;line-height:32pt;font-weight:800;letter-spacing:-.02em;color:#fff}
+.cta .s{font-size:12.5pt;line-height:18pt;color:var(--b200)}
+.contacts{display:flex;gap:22pt;padding-top:8pt}
+.contact{display:flex;flex-direction:column;gap:3pt}
+.contact .eyebrow{color:var(--b300)}
+.contact .v{font-size:9.5pt;line-height:13.5pt;font-weight:600;color:#fff}
+</style></head><body><section class="page"><div class="hdr"><img src="../assets/logo-closertech-2026.svg" alt="CloserTech"><span class="eyebrow">MEDIA KIT · OCTOBER 2026</span></div>
+<div class="hero"><span class="eyebrow">CONTENT CREATOR · TECH & AI</span><h1 class="display">Tech and AI,<br>working on screen.</h1></div>
+<div class="row"><div class="col"><p class="subL">Hands-on tutorials in Brazilian Portuguese, for people who follow, test and choose technology tools.</p><p class="bodyB" style="color:var(--sec)">Script approved before shooting · Real product interface · In-house studio · 4K and 1080p delivery</p>
+<p class="creator"><span class="bodyB">Antônio Louback · Vitória, Brazil ·</span><a class="bodyB blue" href="https://www.instagram.com/closertech1">@closertech1</a></p>
+</div>
+<div class="portrait"><img src="../assets/antonio-retrato-recorte.png" alt="Antônio Louback"></div></div>
+<div class="ind"><div class="tile"><span class="numL">379K</span><span class="label">Instagram followers, the main channel</span></div><div class="tile"><span class="numL">≈ 920K</span><span class="label">followers across five profiles*</span></div><div class="tile"><span class="numL">7 brands</span><span class="label">with content produced in October 2026</span></div></div>
+<div class="ftr"><p class="note">Follower counts read on public profiles on Oct 29, 2026. *Instagram, TikTok, Facebook, YouTube and Threads; audiences overlap across platforms.</p><span class="label">01 / 04</span></div></section><section class="page"><div class="hdr"><img src="../assets/logo-closertech-2026.svg" alt="CloserTech"><span class="eyebrow">AUDIENCE</span></div><div class="title"><span class="eyebrow">WHO WATCHES</span><h2 class="h1">An audience that is already in your market.</h2></div>
+<div class="sec-block"><span class="label">Followers · public read on Oct 29, 2026</span><div class="plat"><div class="ptile"><span class="subM"><i class="dot" style="background:#E1306C"></i>Instagram</span><span class="numM">379K</span><span class="note">followers</span></div><div class="ptile"><span class="subM"><i class="dot" style="background:#0B0B14"></i>TikTok</span><span class="numM">236.7K</span><span class="note">followers</span></div><div class="ptile"><span class="subM"><i class="dot" style="background:#1877F2"></i>Facebook</span><span class="numM">247K</span><span class="note">followers</span></div><div class="ptile"><span class="subM"><i class="dot" style="background:#FF0000"></i>YouTube</span><span class="numM">31.2K</span><span class="note">followers</span></div><div class="ptile"><span class="subM"><i class="dot" style="background:#3A3F52"></i>Threads</span><span class="numM">25.7K</span><span class="note">followers</span></div></div></div>
+<div class="card"><div class="l"><span class="numXL">21K</span><span class="subM">median views per Reel</span><span class="note">25 non-pinned Reels · Instagram · Oct 1–29, 2026</span></div><div class="r"><span class="body bul">16 of 25 above 10K views</span><span class="body bul">7 above 50K</span><span class="body bul">Peak of 452K</span><span class="body bul">Pinned Reels (3.5M and 2.3M) excluded</span></div></div>
+<div class="sec-block"><span class="subM">Distribution of the 25 Reels by views band</span><div class="bands"><div class="band"><div class="dots"><i style="background:var(--b200)"></i><i style="background:var(--b200)"></i><i style="background:var(--b200)"></i><i style="background:var(--b200)"></i><i style="background:var(--b200)"></i><i style="background:var(--b200)"></i><i style="background:var(--b200)"></i><i style="background:var(--b200)"></i><i style="background:var(--b200)"></i></div><span class="label" style="color:var(--body)">9 Reels · under 10K</span></div><div class="band"><div class="dots"><i style="background:var(--b300)"></i><i style="background:var(--b300)"></i><i style="background:var(--b300)"></i><i style="background:var(--b300)"></i><i style="background:var(--b300)"></i><i style="background:var(--b300)"></i><i style="background:var(--b300)"></i><i style="background:var(--b300)"></i><i style="background:var(--b300)"></i></div><span class="label" style="color:var(--body)">9 Reels · 10K to 50K</span></div><div class="band"><div class="dots"><i style="background:var(--blue)"></i><i style="background:var(--blue)"></i><i style="background:var(--blue)"></i><i style="background:var(--blue)"></i><i style="background:var(--blue)"></i><i style="background:var(--blue)"></i><i style="background:var(--blue)"></i></div><span class="label" style="color:var(--body)">7 Reels · above 50K</span></div></div><span class="note">Each marker is one Reel. Public views on Oct 29, 2026.</span></div>
+<div class="sec-block" style="gap:10pt"><span class="subM">Audience profile</span><div class="rings"><div class="ring"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="24" fill="none" stroke="#E4E7FF" stroke-width="8"/><circle cx="28" cy="28" r="24" fill="none" stroke="#2F3CFF" stroke-width="8" stroke-dasharray="134.21 150.80" transform="rotate(-90 28 28)"/><text x="28" y="32" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#0B0B14">89%</text></svg><span class="lbl">in Brazil</span></div><div class="ring"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="24" fill="none" stroke="#E4E7FF" stroke-width="8"/><circle cx="28" cy="28" r="24" fill="none" stroke="#2F3CFF" stroke-width="8" stroke-dasharray="123.65 150.80" transform="rotate(-90 28 28)"/><text x="28" y="32" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#0B0B14">82%</text></svg><span class="lbl">aged 18–44</span></div><div class="ring"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="24" fill="none" stroke="#E4E7FF" stroke-width="8"/><circle cx="28" cy="28" r="24" fill="none" stroke="#2F3CFF" stroke-width="8" stroke-dasharray="131.19 150.80" transform="rotate(-90 28 28)"/><text x="28" y="32" text-anchor="middle" font-family="Inter" font-size="12" font-weight="700" fill="#0B0B14">87%</text></svg><span class="lbl">men</span></div></div><span class="note warn">Instagram · Insights · {period} · base: {followers or accounts reached}</span></div>
+<div class="ftr"><p class="note">Sources: follower counts read on public profiles on Oct 29, 2026; public views of the 25 non-pinned Instagram Reels published Oct 1–29, 2026; audience: Instagram Insights, {period}.</p><span class="label">02 / 04</span></div></section><section class="page" style="gap:14pt"><div class="hdr"><img src="../assets/logo-closertech-2026.svg" alt="CloserTech"><span class="eyebrow">WORK</span></div><div class="title"><span class="eyebrow">OCTOBER 2026</span><h2 class="h1">The product working on screen, for 7 brands in one month.</h2></div>
+<div class="sec-block"><span class="label">Content produced in October 2026 for:</span><div class="strip"><span class="brand"><img src="../assets/logos-marcas/logo-capcut.png" alt="CapCut">CapCut</span><span class="brand"><img src="../assets/logos-marcas/logo-dreamina.png" alt="Dreamina">Dreamina</span><span class="brand"><img src="../assets/logos-marcas/logo-wav.png" alt="Wav">Wav</span><span class="brand"><img src="../assets/logos-marcas/logo-dola.png" alt="Dola">Dola</span><span class="brand"><img src="../assets/logos-marcas/logo-freebeat.png" alt="Freebeat">Freebeat</span><span class="brand"><img src="../assets/logos-marcas/logo-runable.svg" alt="Runable">Runable</span><span class="brand"><img src="../assets/logos-marcas/logo-meshy.png" alt="Meshy">Meshy</span></div></div>
+<div class="main"><div class="frame"><img src="../assets/frames/frame-dola-seedance-v3.jpg" alt="Dola · Seedance 2.0"></div><div class="txt"><span class="eyebrow">MAIN CASE</span><span class="numM">Dola · Seedance 2.0</span><div><span class="eyebrow sec">IDEA</span><p class="body">A suspense mini-series created from prompt to scene, with the hook in the first seconds.</p></div><div><span class="eyebrow sec">DELIVERY</span><p class="body">Two vertical videos, brand-approved script, real app interface with the model name legible, step-by-step tutorial and a call to try it.</p></div><div><span class="eyebrow sec">FIT</span><p class="body">For AI creation apps that need to show the full flow and the result, with no simulation.</p></div><p><a class="bodyB blue" href="https://www.instagram.com/closertech1">Watch at @closertech1</a> <span class="note warn">{Reel URL · to confirm}</span></p></div></div>
+<div class="comps"><div class="comp"><div class="img"><img src="../assets/frames/thumb-youtube-capcut.jpg" alt="CapCut"></div><span class="bodyB">CapCut</span><p class="note" style="color:var(--body)">Tutorial: edit a whole video with one ChatGPT request, with the real app on screen. Delivery: two videos and a YouTube cover.</p></div><div class="comp"><div class="img"><img src="../assets/frames/frame-wav-ui-v3.jpg" alt="Wav"></div><span class="bodyB">Wav</span><p class="note" style="color:var(--body)">AI music and soundtrack in three steps, with the tool's interface on screen.</p></div><div class="comp"><div class="img"><img src="../assets/frames/frame-meshy-4k.jpg" alt="Meshy"></div><span class="bodyB">Meshy</span><p class="note" style="color:var(--body)">3D character generated from prompt to 4K result, with the brand logo in the opening.</p></div></div>
+<div class="sec-block"><span class="subM">How each video is built</span><div class="steps"><div class="step"><span class="num">1</span><div><div class="bodyB">Hook</div><div class="note">in the first three seconds</div></div></div><div class="step"><span class="num">2</span><div><div class="bodyB">Demo</div><div class="note">with the real product screen</div></div></div><div class="step"><span class="num">3</span><div><div class="bodyB">Call to action</div><div class="note">link, coupon or comment keyword</div></div></div></div></div>
+<div class="chips"><span class="chip">Script and direction</span><span class="chip">In-house studio</span><span class="chip">Real interface</span><span class="chip">3D and motion</span><span class="chip">Editing and audio</span><span class="chip">4K and 1080p</span></div>
+<div class="ftr"><p class="note">Work from October 2026. Video frames produced by CloserTech; brands and logos belong to their owners. No performance metrics published as of Oct 30, 2026.</p><span class="label">03 / 04</span></div></section><section class="page" style="gap:14pt"><div class="hdr"><img src="../assets/logo-closertech-2026.svg" alt="CloserTech"><span class="eyebrow">PARTNERSHIP</span></div><div class="title"><span class="eyebrow">HOW WE WORK</span><h2 class="h1">From briefing to publishing, without friction.</h2></div>
+<div class="steps"><div class="step v"><span class="num">1</span><div class="bodyB">Briefing</div><div class="note">Goal, product and brand message.</div></div><div class="step v"><span class="num">2</span><div class="bodyB">Script</div><div class="note">Idea and voice-over proposal, approved before shooting.</div></div><div class="step v"><span class="num">3</span><div class="bodyB">Production</div><div class="note">Filming, 3D and editing in our studio.</div></div><div class="step v"><span class="num">4</span><div class="bodyB">Approval</div><div class="note">The brand reviews the video before it goes live.</div></div></div>
+<div class="sec-block"><span class="subM">Formats</span><div class="cards"><div class="pack"><span class="eyebrow">ESSENTIAL</span><span class="numM">1 Reel</span><p class="body">One idea, one feature, one demo. For a launch or a single-feature highlight, on Instagram.</p><span class="label price">Pricing on request</span></div><div class="pack rec"><span class="eyebrow">RECOMMENDED</span><span class="numM">3-Reel series</span><p class="body">Three videos in sequence: introduce the product, demo it on screen, convert with the offer. The audience sees the brand three times in a month.</p><span class="label price">Pricing on request</span></div><div class="pack"><span class="eyebrow">MULTI-PLATFORM</span><span class="numM">Reel + Shorts + TikTok</span><p class="body">One production, three native deliveries: the same video adapted in cut, captions and cover for Instagram, YouTube Shorts and TikTok.</p><span class="label price">Pricing on request</span></div></div><span class="body" style="color:var(--sec)">We also do unboxings, reviews, stories and feed posts.</span></div>
+<div class="terms"><div class="term"><span class="bodyB">Clear disclosure</span><span class="note">Sponsored content labeled according to each platform's rules.</span></div><div class="term"><span class="bodyB">Agreed rights</span><span class="note">Usage, paid media and exclusivity defined before shooting.</span></div><div class="term"><span class="bodyB">Timeline and revision</span><span class="note">Schedule agreed at briefing, with a revision round.</span></div></div>
+<div class="cta"><p class="t">Shall we show your product working?</p><p class="s">Send us the product and the campaign goal. We reply with a proposal and a first script idea.</p><div class="contacts"><div class="contact"><span class="eyebrow">EMAIL</span><a class="v" href="mailto:contatoclosertech1@gmail.com">contatoclosertech1@gmail.com</a></div><div class="contact"><span class="eyebrow">INSTAGRAM</span><a class="v" href="https://www.instagram.com/closertech1">@closertech1</a></div><div class="contact"><span class="eyebrow">LINKS</span><a class="v" href="https://linktr.ee/closertech1">linktr.ee/closertech1</a></div><div class="contact"><span class="eyebrow">BASED IN</span><span class="v">Vitória, Brazil</span></div></div></div>
+<div class="ftr"><p class="note">Media kit v4 · October 2026 · data read on Oct 29, 2026.</p><span class="label">04 / 04</span></div></section></body></html>
